@@ -1,0 +1,53 @@
+## Ignore Visual Studio temporary files, build results, and
+## user-specific files.
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Uncomment if you have tasks that create the following files:
+# *.log
+
+# Visual Studio 2019/2022 config folder
+.vs/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Others
+_ReSharper*/
+*.ncrunch*
+.*.crunch*.local.xml
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+# The packages folder can be ignored because of PackageReference
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+
+# Microsoft Azure Web App publish settings
+PublishProfiles/
+
+# Visual Studio Code
+.vscode/
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# User-specific files
+*.swp
+*.bak
+*.tmp
+
+# IIS Express folder
+.vsconfig
