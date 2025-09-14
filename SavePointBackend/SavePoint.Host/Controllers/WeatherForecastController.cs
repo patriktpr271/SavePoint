@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace SavePointBackend.Controllers
+namespace SavePoint.Host.Controllers
 {
     [ApiController]
     [Route("[controller]")]

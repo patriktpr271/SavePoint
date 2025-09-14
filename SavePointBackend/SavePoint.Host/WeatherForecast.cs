@@ -1,4 +1,4 @@
-namespace SavePointBackend
+namespace SavePoint.Host
 {
     public class WeatherForecast
     {
