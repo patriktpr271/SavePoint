@@ -13,5 +13,6 @@ namespace SavePoint.BusinessLogic.Services.Interfaces
 		Task ImportGamesAsync();
 		Task ImportCompaniesAsync();
 		Task ImportPlatformsAsync();
+		Task ImportAllDataAsync();
 	}
 }

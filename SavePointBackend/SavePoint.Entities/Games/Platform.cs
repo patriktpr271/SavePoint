@@ -11,5 +11,7 @@ namespace SavePoint.Entities.Games
 		public string Name { get; set; }	
 		public string? Abbreviation { get; set; } = string.Empty;
 
+		// Navigation properties
+		public ICollection<GamePlatform> GamePlatforms { get; set; } = new List<GamePlatform>();
 	}
 }

@@ -36,7 +36,7 @@ namespace SavePoint.BusinessLogic.Services
 
 			var games = await _client.QueryAsync<IGDB.Models.Game>(
 				 IGDBClient.Endpoints.Games,
-				 "fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; limit 500;"
+				 "fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; limit 500; offset 1000;"
 				);
 			foreach (var game in games)
 			{

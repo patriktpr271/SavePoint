@@ -10,5 +10,6 @@ namespace SavePoint.DAL.Repositories.Interfaces
 	public interface IGameRepository
 	{
 		Task InsertOrUpdateAsync(Game game);
+		Task<Game?> GetByExternalIdAsync(long? externalId);
 	}
 }

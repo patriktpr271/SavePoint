@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SavePoint.Entities.Lists;
+using SavePoint.Entities.Reviews;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,5 +20,7 @@ namespace SavePoint.Entities.Games
 		public ICollection<GameGenre> GameGenres { get; set; } = new List<GameGenre>();
 		public ICollection<GamePlatform> GamePlatforms { get; set; } = new List<GamePlatform>();
 		public ICollection<GameCompany> GameCompanies { get; set; } = new List<GameCompany>();
+		public ICollection<Review> Reviews { get; set; } = new List<Review>();
+		public ICollection<UserListItem> UserListItems { get; set; } = new List<UserListItem>();
 	}
 }

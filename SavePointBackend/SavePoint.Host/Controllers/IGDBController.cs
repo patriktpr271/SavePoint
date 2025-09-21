@@ -41,5 +41,11 @@ namespace SavePoint.Host.Controllers
 			await _importService.ImportPlatformsAsync();
 			return Ok("Platforms imported successfully.");
 		}
+		[HttpPost("all")]
+		public async Task<IActionResult> ImportAll()
+		{
+			await _importService.ImportAllDataAsync();
+			return Ok("All data imported successfully.");
+		}
 	}
 }
