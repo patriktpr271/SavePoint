@@ -10,7 +10,7 @@ namespace SavePoint.Entities.Games
 	{
 		public string Name { get; set; }
 
-		//navigation properties
-		public ICollection<GameGenre> GameGenre { get; set; } = new List<GameGenre>();
+		// Navigation properties
+		public ICollection<GameGenre> GameGenres { get; set; } = new List<GameGenre>();
 	}
 }

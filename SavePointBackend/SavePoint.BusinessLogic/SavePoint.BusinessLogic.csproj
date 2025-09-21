@@ -6,4 +6,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="IGDB" Version="6.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SavePoint.DAL\SavePoint.DAL.csproj" />
+    <ProjectReference Include="..\SavePoint.Entities\SavePoint.Entities.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,11 @@
+using IGDB;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SavePoint.BusinessLogic.Services;
+using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.DAL.Contexts;
+using SavePoint.DAL.Repositories;
+using SavePoint.DAL.Repositories.Interfaces;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,10 +13,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddIdentityCore<SavePoint.Entities.Users.ApplicationUser>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IIGDBImportService, IGDBImportService>();
+builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+builder.Services.AddScoped<IGameRepository, GameRepository>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IPlatfromRepository, PlatfromRepository>();
+
+builder.Services.AddSingleton<IGDBClient>(sp =>
+{
+	var clientId = "9gluavzyv9ymx4ft2u12h9dg7xah02";
+	var accessToken = "zkfuz4j1qcceo99ilidwugqzzjop16";
+	return new IGDBClient(clientId, accessToken);
+});
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
    options.UseSqlServer(connectionString));

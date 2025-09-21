@@ -4,6 +4,7 @@ using SavePoint.Entities.Users;
 using SavePoint.Entities.Games;
 using SavePoint.Entities.Lists;
 using SavePoint.Entities.Reviews;
+using SavePoint.Common.Enums;
 
 namespace SavePoint.DAL.Contexts
 {
@@ -56,23 +57,55 @@ namespace SavePoint.DAL.Contexts
                 entity.HasIndex(c => c.ExternalId).IsUnique();
             });
 
-            // ========= Many-to-Many =========
+            // ========= Many-to-Many Relationships =========
             modelBuilder.Entity<GameGenre>(entity =>
             {
                 entity.HasKey(gg => gg.Id);
                 entity.HasIndex(gg => new { gg.GameId, gg.GenreId }).IsUnique();
+                
+                entity.HasOne(gg => gg.Game)
+                    .WithMany(g => g.GameGenres)
+                    .HasForeignKey(gg => gg.GameId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(gg => gg.Genre)
+                    .WithMany(g => g.GameGenres)
+                    .HasForeignKey(gg => gg.GenreId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<GamePlatform>(entity =>
             {
                 entity.HasKey(gp => gp.Id);
                 entity.HasIndex(gp => new { gp.GameId, gp.PlatformId }).IsUnique();
+                
+                entity.HasOne(gp => gp.Game)
+                    .WithMany(g => g.GamePlatforms)
+                    .HasForeignKey(gp => gp.GameId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(gp => gp.Platform)
+                    .WithMany(p => p.GamePlatforms)
+                    .HasForeignKey(gp => gp.PlatformId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<GameCompany>(entity =>
             {
                 entity.HasKey(gc => gc.Id);
-                entity.HasIndex(gc => new { gc.GameId, gc.CompanyId }).IsUnique();
+                entity.HasIndex(gc => new { gc.GameId, gc.CompanyId});
+                entity.Property(gc => gc.Role)
+                    .HasConversion<string>();
+                
+                entity.HasOne(gc => gc.Game)
+                    .WithMany(g => g.GameCompanies)
+                    .HasForeignKey(gc => gc.GameId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(gc => gc.Company)
+                    .WithMany(c => c.GameCompanies)
+                    .HasForeignKey(gc => gc.CompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ========= Review =========
@@ -80,18 +113,43 @@ namespace SavePoint.DAL.Contexts
             {
                 entity.HasKey(r => r.Id);
                 entity.HasIndex(r => new { r.GameId, r.UserId }).IsUnique();
+                
+                entity.HasOne(r => r.Game)
+                    .WithMany(g => g.Reviews)
+                    .HasForeignKey(r => r.GameId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(r => r.User)
+                    .WithMany(u => u.Reviews)
+                    .HasForeignKey(r => r.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ========= User List =========
             modelBuilder.Entity<UserList>(entity =>
             {
                 entity.HasKey(ul => ul.Id);
+                
+                entity.HasOne(ul => ul.User)
+                    .WithMany(u => u.UserLists)
+                    .HasForeignKey(ul => ul.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<UserListItem>(entity =>
             {
                 entity.HasKey(uli => uli.Id);
                 entity.HasIndex(uli => new { uli.UserListId, uli.GameId }).IsUnique();
+                
+                entity.HasOne(uli => uli.UserList)
+                    .WithMany(ul => ul.UserListItems)
+                    .HasForeignKey(uli => uli.UserListId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(uli => uli.Game)
+                    .WithMany(g => g.UserListItems)
+                    .HasForeignKey(uli => uli.GameId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

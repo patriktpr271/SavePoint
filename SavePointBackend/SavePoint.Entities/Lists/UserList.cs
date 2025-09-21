@@ -11,9 +11,10 @@ namespace SavePoint.Entities.Lists
 	{
 		public string Name { get; set; }
 		public string Description { get; set; }
-
-		//foreign key for the user who owns the list
 		public string UserId { get; set; }
 		public ApplicationUser User { get; set; }
+
+		// Navigation properties
+		public ICollection<UserListItem> UserListItems { get; set; } = new List<UserListItem>();
 	}
 }

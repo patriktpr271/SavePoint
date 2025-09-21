@@ -11,8 +11,9 @@ namespace SavePoint.Entities.Common
 		// EF Core primary key
 		public Guid Id { get; set; } = Guid.NewGuid();
 
-		// External ID from IGDB or another API
-		public long ExternalId { get; set; }
+		// External ID from IGDB
+		public long? ExternalId { get; set; }
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+		public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 	}
 }
