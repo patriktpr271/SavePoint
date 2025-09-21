@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SavePoint.DAL.Contexts;
 
@@ -11,9 +12,11 @@ using SavePoint.DAL.Contexts;
 namespace SavePoint.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250915110322_RemoveApplicationUserIdFromGames")]
+    partial class RemoveApplicationUserIdFromGames
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,6 +193,7 @@ namespace SavePoint.DAL.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CoverUrl")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -202,6 +206,9 @@ namespace SavePoint.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("PlatformId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<double>("Rating")
                         .HasColumnType("float");
 
@@ -209,6 +216,7 @@ namespace SavePoint.DAL.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Summary")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -219,6 +227,8 @@ namespace SavePoint.DAL.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique()
                         .HasFilter("[ExternalId] IS NOT NULL");
+
+                    b.HasIndex("PlatformId");
 
                     b.ToTable("Games");
                 });
@@ -238,10 +248,6 @@ namespace SavePoint.DAL.Migrations
                     b.Property<Guid>("GameId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -249,7 +255,8 @@ namespace SavePoint.DAL.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.HasIndex("GameId", "CompanyId");
+                    b.HasIndex("GameId", "CompanyId")
+                        .IsUnique();
 
                     b.ToTable("GameCompanies");
                 });
@@ -302,6 +309,8 @@ namespace SavePoint.DAL.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PlatformId");
+
                     b.HasIndex("GameId", "PlatformId")
                         .IsUnique();
 
@@ -343,6 +352,7 @@ namespace SavePoint.DAL.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Abbreviation")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -586,43 +596,68 @@ namespace SavePoint.DAL.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SavePoint.Entities.Games.Game", b =>
+                {
+                    b.HasOne("SavePoint.Entities.Games.Platform", null)
+                        .WithMany("Games")
+                        .HasForeignKey("PlatformId");
+                });
+
             modelBuilder.Entity("SavePoint.Entities.Games.GameCompany", b =>
                 {
-                    b.HasOne("SavePoint.Entities.Games.Company", null)
+                    b.HasOne("SavePoint.Entities.Games.Company", "Company")
                         .WithMany("GameCompanies")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SavePoint.Entities.Games.Game", null)
+                    b.HasOne("SavePoint.Entities.Games.Game", "Game")
                         .WithMany("GameCompanies")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("SavePoint.Entities.Games.GameGenre", b =>
                 {
-                    b.HasOne("SavePoint.Entities.Games.Game", null)
+                    b.HasOne("SavePoint.Entities.Games.Game", "Game")
                         .WithMany("GameGenres")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SavePoint.Entities.Games.Genre", null)
+                    b.HasOne("SavePoint.Entities.Games.Genre", "Genre")
                         .WithMany("GameGenre")
                         .HasForeignKey("GenreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Genre");
                 });
 
             modelBuilder.Entity("SavePoint.Entities.Games.GamePlatform", b =>
                 {
-                    b.HasOne("SavePoint.Entities.Games.Game", null)
+                    b.HasOne("SavePoint.Entities.Games.Game", "Game")
                         .WithMany("GamePlatforms")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SavePoint.Entities.Games.Platform", "Platform")
+                        .WithMany()
+                        .HasForeignKey("PlatformId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Platform");
                 });
 
             modelBuilder.Entity("SavePoint.Entities.Lists.UserList", b =>
@@ -691,6 +726,11 @@ namespace SavePoint.DAL.Migrations
             modelBuilder.Entity("SavePoint.Entities.Games.Genre", b =>
                 {
                     b.Navigation("GameGenre");
+                });
+
+            modelBuilder.Entity("SavePoint.Entities.Games.Platform", b =>
+                {
+                    b.Navigation("Games");
                 });
 
             modelBuilder.Entity("SavePoint.Entities.Users.ApplicationUser", b =>

@@ -9,6 +9,5 @@ namespace SavePoint.Entities.Users
 
 		// Navigation properties
 		public ICollection<Reviews.Review> Reviews { get; set; } = new List<Reviews.Review>();
-		public ICollection<Games.Game> Games { get; set; } = new List<Games.Game>();
 	}
 }

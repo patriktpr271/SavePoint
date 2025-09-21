@@ -9,8 +9,8 @@ namespace SavePoint.Entities.Games
 	public class Game : Common.ApiEntity
 	{
 		public string Name { get; set; }
-		public string Summary { get; set; } = string.Empty;
-		public string CoverUrl { get; set; } = string.Empty;
+		public string? Summary { get; set; } = string.Empty;
+		public string? CoverUrl { get; set; } = string.Empty;
 		public double Rating { get; set; }
 		public DateTime ReleaseDate { get; set; }
 

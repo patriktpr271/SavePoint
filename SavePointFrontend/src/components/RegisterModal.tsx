@@ -91,14 +91,11 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
       });
 
       if (response.ok) {
-        // Registration successful
         handleClose();
-        // You might want to show a success message or automatically log the user in
+        // TODO: Show succes message or log in automatically.
       } else {
         const data = await response.json();
-        // Handle various error formats from the API
         if (data.errors && Array.isArray(data.errors)) {
-          // Handle ASP.NET Core Identity error format
           const formattedErrors = data.errors.map((error: string) => {
             // Convert error codes to user-friendly messages
             switch (error) {

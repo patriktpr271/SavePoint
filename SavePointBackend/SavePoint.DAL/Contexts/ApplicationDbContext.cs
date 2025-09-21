@@ -4,6 +4,7 @@ using SavePoint.Entities.Users;
 using SavePoint.Entities.Games;
 using SavePoint.Entities.Lists;
 using SavePoint.Entities.Reviews;
+using SavePoint.Common.Enums;
 
 namespace SavePoint.DAL.Contexts
 {
@@ -72,7 +73,9 @@ namespace SavePoint.DAL.Contexts
             modelBuilder.Entity<GameCompany>(entity =>
             {
                 entity.HasKey(gc => gc.Id);
-                entity.HasIndex(gc => new { gc.GameId, gc.CompanyId }).IsUnique();
+                entity.HasIndex(gc => new { gc.GameId, gc.CompanyId});
+                entity.Property(gc => gc.Role)
+                    .HasConversion<string>();
             });
 
             // ========= Review =========

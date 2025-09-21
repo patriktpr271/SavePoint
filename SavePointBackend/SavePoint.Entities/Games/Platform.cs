@@ -9,9 +9,7 @@ namespace SavePoint.Entities.Games
 	public class Platform : Common.ApiEntity
 	{
 		public string Name { get; set; }	
-		public string Abbreviation { get; set; } = string.Empty;
+		public string? Abbreviation { get; set; } = string.Empty;
 
-		//navigation properties
-		public ICollection<Game> Games { get; set; } = new List<Game>();
 	}
 }

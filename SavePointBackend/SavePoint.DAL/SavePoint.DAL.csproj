@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SavePoint.Common\SavePoint.Common.csproj" />
     <ProjectReference Include="..\SavePoint.Entities\SavePoint.Entities.csproj" />
   </ItemGroup>
 
