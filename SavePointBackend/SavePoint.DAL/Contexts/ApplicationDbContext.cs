@@ -5,6 +5,7 @@ using SavePoint.Entities.Games;
 using SavePoint.Entities.Lists;
 using SavePoint.Entities.Reviews;
 using SavePoint.Common.Enums;
+using SavePoint.Entities.Popularity;
 
 namespace SavePoint.DAL.Contexts
 {
@@ -22,9 +23,10 @@ namespace SavePoint.DAL.Contexts
         public DbSet<GameCompany> GameCompanies { get; set; }
         public DbSet<Platform> Platforms { get; set; }
         public DbSet<Company> Companies { get; set; }
+        public DbSet<Popularity> Popularities { get; set; }
 
-        //Internal Entitites
-        public DbSet<Review> Reviews { get; set; }
+		//Internal Entitites
+		public DbSet<Review> Reviews { get; set; }
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListItem> UserListItems { get; set; }
 
@@ -151,6 +153,22 @@ namespace SavePoint.DAL.Contexts
                     .HasForeignKey(uli => uli.GameId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
-        }
-    }
+
+			// ========= Popularity =========
+			modelBuilder.Entity<Popularity>(entity =>
+			{
+				entity.HasKey(p => p.Id);
+				entity.HasIndex(p => p.ExternalId);
+
+				// Configure PopularityScore with higher precision (18 total digits, 10 decimal places)
+				entity.Property(p => p.PopularityScore)
+					.HasColumnType("decimal(18,10)");
+
+				entity.HasOne(p => p.Game)
+					.WithMany(g => g.Popularities)
+					.HasForeignKey(p => p.GameId)
+					.OnDelete(DeleteBehavior.Cascade);
+			});
+		}
+	}
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Menu, X, Search } from "lucide-react";
 import RegisterModal from "./RegisterModal";
 
@@ -13,7 +14,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Left - Logo */}
           <div className="flex-shrink-0">
-            <a className="text-2xl font-bold">SavePoint</a>
+            <Link to="/" className="text-2xl font-bold hover:text-primary transition-colors">SavePoint</Link>
           </div>
 
           {/* Center - Menu (desktop only) */}
@@ -21,7 +22,7 @@ export default function Navbar() {
             <a className="hover:underline cursor-pointer">Sign In</a>
             <a className="hover:underline cursor-pointer">Lists</a>
             <a className="hover:underline cursor-pointer" onClick={() => setIsRegisterModalOpen(true)}>Create Account</a>
-            <a className="hover:underline cursor-pointer">Videogames</a>
+            <Link to="/videogames" className="hover:underline cursor-pointer">Videogames</Link>
           </nav>
 
           {/* Right - Search (desktop only)  */}
@@ -53,7 +54,7 @@ export default function Navbar() {
           <a className="block hover:underline">Sign In</a>
           <a className="block hover:underline">Lists</a>
           <a className="block hover:underline" onClick={() => setIsRegisterModalOpen(true)}>Create Account</a>
-          <a className="block hover:underline">Videogames</a>
+          <Link to="/videogames" className="block hover:underline" onClick={() => setIsOpen(false)}>Videogames</Link>
           <div className="mt-3 flex gap-2 items-center">
             <input
               type="text"

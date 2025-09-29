@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SavePoint.DAL.Contexts;
 using SavePoint.DAL.Repositories.Interfaces;
+using SavePoint.Entities.Common;
 using SavePoint.Entities.Games;
 
 namespace SavePoint.DAL.Repositories
@@ -94,6 +95,61 @@ namespace SavePoint.DAL.Repositories
 				.Include(g => g.GamePlatforms)
 				.Include(g => g.GameCompanies)
 				.FirstOrDefaultAsync(x => x.ExternalId == externalId);
+		}
+
+		public async Task<Game?> GetByIdWithDetailsAsync(Guid id)
+		{
+			return await _context.Games
+				.Include(g => g.GameGenres)
+					.ThenInclude(gg => gg.Genre)
+				.Include(g => g.GamePlatforms)
+					.ThenInclude(gp => gp.Platform)
+				.Include(g => g.GameCompanies)
+					.ThenInclude(gc => gc.Company)
+				.Include(g => g.Reviews)
+				.Include(g => g.Popularities)
+				.FirstOrDefaultAsync(g => g.Id == id);
+		}
+
+		public async Task<List<Game>> GetAllAsync()
+		{
+			return await _context.Games
+				.Include(g => g.GameGenres)
+				.Include(g => g.GamePlatforms)
+				.Include(g => g.GameCompanies)
+				.ToListAsync();
+		}
+
+		public async Task<PagedResult<Game>> GetPopularGames(int popularityType, int pageNumber = 1, int pageSize = 20)
+		{
+			//get games ordered by popularity score by the popularity type
+			var query = _context.Games
+				.Include(g => g.GameGenres)
+					.ThenInclude(gg => gg.Genre)
+				.Include(g => g.GamePlatforms)
+					.ThenInclude(gp => gp.Platform)
+				.Include(g => g.GameCompanies)
+					.ThenInclude(gc => gc.Company)
+				.Include(g => g.Popularities)
+				.Where(g => g.Popularities.Any(p => p.PopularityType == popularityType))
+				.OrderByDescending(g => g.Popularities
+					.Where(p => p.PopularityType == popularityType)
+					.Max(p => p.PopularityScore));
+
+						var totalCount = await query.CountAsync();
+
+						var items = await query
+							.Skip((pageNumber - 1) * pageSize)
+							.Take(pageSize)
+							.ToListAsync();
+
+			return new PagedResult<Game>
+			{
+				Items = items,
+				TotalCount = totalCount,
+				PageNumber = pageNumber,
+				PageSize = pageSize
+			};
 		}
 	}
 }

@@ -6,22 +6,34 @@ using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.DAL.Contexts;
 using SavePoint.DAL.Repositories;
 using SavePoint.DAL.Repositories.Interfaces;
-
+using System.Text.Json.Serialization;
+using SavePoint.BusinessLogic.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddIdentityCore<SavePoint.Entities.Users.ApplicationUser>();
+
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(GameMappingProfile), typeof(UserMappingProfile));
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IIGDBImportService, IGDBImportService>();
 builder.Services.AddScoped<IGenreRepository, GenreRepository>();
 builder.Services.AddScoped<IGameRepository, GameRepository>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IPlatfromRepository, PlatfromRepository>();
+builder.Services.AddScoped<IPopularityRepository, PopularityRepository>();
+builder.Services.AddScoped<IGameService, GameService>();
 
 builder.Services.AddSingleton<IGDBClient>(sp =>
 {
@@ -29,6 +41,7 @@ builder.Services.AddSingleton<IGDBClient>(sp =>
 	var accessToken = "zkfuz4j1qcceo99ilidwugqzzjop16";
 	return new IGDBClient(clientId, accessToken);
 });
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
    options.UseSqlServer(connectionString));
@@ -36,7 +49,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register Identity with EF Core stores
 builder.Services.AddIdentity<SavePoint.Entities.Users.ApplicationUser, IdentityRole>()
 	.AddEntityFrameworkStores<ApplicationDbContext>();
-
 
 var app = builder.Build();
 

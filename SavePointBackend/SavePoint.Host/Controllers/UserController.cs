@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SavePoint.BusinessLogic.Services;
-using SavePoint.Entities.Dtos;
+using SavePoint.Common.Dtos.Users;
 
 namespace SavePoint.Host.Controllers
 {
