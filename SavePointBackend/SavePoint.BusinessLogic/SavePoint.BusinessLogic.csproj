@@ -7,11 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="IGDB" Version="6.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SavePoint.Common\SavePoint.Common.csproj" />
     <ProjectReference Include="..\SavePoint.DAL\SavePoint.DAL.csproj" />
     <ProjectReference Include="..\SavePoint.Entities\SavePoint.Entities.csproj" />
   </ItemGroup>

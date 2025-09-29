@@ -47,5 +47,18 @@ namespace SavePoint.Host.Controllers
 			await _importService.ImportAllDataAsync();
 			return Ok("All data imported successfully.");
 		}
+		[HttpPost("popularity")]
+		public async Task<IActionResult> ImportPopularity()
+		{
+			await _importService.ImportPopularityAsync();
+			return Ok("Popularity data imported successfully.");
+		}
+
+		[HttpPost("games-with-popularity")]
+		public async Task<IActionResult> ImportGamesWithBatchedPopularity()
+		{
+			await _importService.ImportGamesWithBatchedPopularityAsync();
+			return Ok("Games with popularity imported successfully in batches.");
+		}
 	}
 }

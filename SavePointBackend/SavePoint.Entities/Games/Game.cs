@@ -1,5 +1,6 @@
 ﻿using SavePoint.Entities.Lists;
 using SavePoint.Entities.Reviews;
+using SavePoint.Entities.Popularity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,5 +23,6 @@ namespace SavePoint.Entities.Games
 		public ICollection<GameCompany> GameCompanies { get; set; } = new List<GameCompany>();
 		public ICollection<Review> Reviews { get; set; } = new List<Review>();
 		public ICollection<UserListItem> UserListItems { get; set; } = new List<UserListItem>();
+		public ICollection<SavePoint.Entities.Popularity.Popularity> Popularities { get; set; } = new List<SavePoint.Entities.Popularity.Popularity>();
 	}
 }

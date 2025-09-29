@@ -1,10 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using SavePoint.Entities.Dtos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SavePoint.Common.Dtos.Users;
 
 namespace SavePoint.BusinessLogic.Services.Interfaces
 {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SavePoint.Entities.Dtos
+namespace SavePoint.Common.Dtos.Users
 {
 	public class RegisterDto
 	{

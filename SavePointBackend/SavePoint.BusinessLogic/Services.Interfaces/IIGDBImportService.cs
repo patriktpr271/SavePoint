@@ -14,5 +14,10 @@ namespace SavePoint.BusinessLogic.Services.Interfaces
 		Task ImportCompaniesAsync();
 		Task ImportPlatformsAsync();
 		Task ImportAllDataAsync();
+		Task ImportPopularityAsync();
+		Task SyncPopularityForExistingGamesAsync();
+		Task ImportPopularityForExistingGamesAsync();
+		Task ImportGamesWithBatchedPopularityAsync();
+
 	}
 }
