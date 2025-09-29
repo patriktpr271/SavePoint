@@ -19,15 +19,15 @@ namespace SavePoint.Host.Controllers
 			[FromQuery] int pageNumber = 1,
 			[FromQuery] int pageSize = 20,
 			[FromQuery] string? search = null,
-			[FromQuery] string? sortBy = null, // "name", "rating", "releaseDate"
-			[FromQuery] string? sortOrder = "asc", // "asc" or "desc"
+			[FromQuery] string? sortBy = null, 
+			[FromQuery] string? sortOrder = "asc",
 			[FromQuery] double? minRating = null,
 			[FromQuery] double? maxRating = null,
 			[FromQuery] int? fromYear = null,
 			[FromQuery] int? toYear = null,
-			[FromQuery] Guid[]? platforms = null, // Changed back to match frontend
-			[FromQuery] Guid[]? companies = null, // Changed back to match frontend
-			[FromQuery] Guid[]? genres = null) // Changed back to match frontend
+			[FromQuery] Guid[]? platforms = null, 
+			[FromQuery] Guid[]? companies = null, 
+			[FromQuery] Guid[]? genres = null) 
 		{
 			if (pageNumber < 1) pageNumber = 1;
 			if (pageSize < 1 || pageSize > 100) pageSize = 20;
@@ -57,9 +57,9 @@ namespace SavePoint.Host.Controllers
 				maxRating, 
 				fromYear,
 				toYear,
-				platforms, // Pass as platformIds to service
-				companies, // Pass as companyIds to service
-				genres); // Pass as genreIds to service
+				platforms, 
+				companies, 
+				genres); 
 
 			return Ok(result);
 		}
