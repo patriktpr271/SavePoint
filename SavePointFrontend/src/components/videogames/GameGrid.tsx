@@ -29,15 +29,18 @@ const GameGrid: React.FC<GameGridProps> = ({ filters }) => {
 
     if (currentFilters.search) params.append('search', currentFilters.search);
     if (currentFilters.genres && currentFilters.genres.length > 0) {
-      currentFilters.genres.forEach(genreId => params.append('genres', genreId.toString()));
+      currentFilters.genres.forEach(genreId => params.append('genres', genreId));
     }
     if (currentFilters.platforms && currentFilters.platforms.length > 0) {
-      currentFilters.platforms.forEach(platformId => params.append('platforms', platformId.toString()));
+      currentFilters.platforms.forEach(platformId => params.append('platforms', platformId));
+    }
+    if (currentFilters.companies && currentFilters.companies.length > 0) {
+      currentFilters.companies.forEach(companyId => params.append('companies', companyId));
     }
     if (currentFilters.minRating !== undefined) params.append('minRating', currentFilters.minRating.toString());
     if (currentFilters.maxRating !== undefined) params.append('maxRating', currentFilters.maxRating.toString());
-    if (currentFilters.releaseYearFrom !== undefined) params.append('releaseYearFrom', currentFilters.releaseYearFrom.toString());
-    if (currentFilters.releaseYearTo !== undefined) params.append('releaseYearTo', currentFilters.releaseYearTo.toString());
+    if (currentFilters.fromYear !== undefined) params.append('fromYear', currentFilters.fromYear.toString());
+    if (currentFilters.toYear !== undefined) params.append('toYear', currentFilters.toYear.toString());
     if (currentFilters.sortBy) params.append('sortBy', currentFilters.sortBy);
     if (currentFilters.sortOrder) params.append('sortOrder', currentFilters.sortOrder);
 
@@ -54,7 +57,7 @@ const GameGrid: React.FC<GameGridProps> = ({ filters }) => {
 
     try {
       const queryString = buildQueryString(filters, page);
-      const response = await fetch(`/api/games?${queryString}`, {
+      const response = await fetch(`/api/game?${queryString}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

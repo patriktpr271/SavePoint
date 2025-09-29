@@ -23,8 +23,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddIdentityCore<SavePoint.Entities.Users.ApplicationUser>();
 
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(GameMappingProfile), typeof(UserMappingProfile));
+// Add AutoMapper - now includes LookupMappingProfile
+builder.Services.AddAutoMapper(typeof(GameMappingProfile), typeof(UserMappingProfile), typeof(LookupMappingProfile));
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IIGDBImportService, IGDBImportService>();
@@ -34,6 +34,7 @@ builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IPlatfromRepository, PlatfromRepository>();
 builder.Services.AddScoped<IPopularityRepository, PopularityRepository>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<ILookupService, LookupService>(); // NEW: Lookup service registration
 
 builder.Services.AddSingleton<IGDBClient>(sp =>
 {

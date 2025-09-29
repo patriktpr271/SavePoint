@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SavePoint.Common.Dtos.Lookups;
 
 namespace SavePoint.Common.Dtos.Games
 {
@@ -12,25 +13,12 @@ namespace SavePoint.Common.Dtos.Games
         // Detailed information with richer structure for frontend
         public List<GenreDto> Genres { get; set; } = new();
         public List<PlatformDto> Platforms { get; set; } = new();
-        public List<CompanyDto> Companies { get; set; } = new();
+        public List<CompanyGameDto> Companies { get; set; } = new();
     }
 
-    public class GenreDto
+    // Special DTO for companies in game context (includes role)
+    public class CompanyGameDto : CompanyDto
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class PlatformDto  
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class CompanyDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
     }
 }

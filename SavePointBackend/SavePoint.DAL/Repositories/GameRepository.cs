@@ -15,6 +15,128 @@ namespace SavePoint.DAL.Repositories
 			_context = context;
 		}
 
+		public async Task<PagedResult<Game>> GetGames(
+			int pageNumber = 1, 
+			int pageSize = 20,
+			string? search = null,
+			string? sortBy = null,
+			string? sortOrder = "asc",
+			double? minRating = null,
+			double? maxRating = null,
+			int? fromYear = null,
+			int? toYear = null,
+			Guid[]? platformIds = null, 
+			Guid[]? companyIds = null, 
+			Guid[]? genreIds = null) 
+		{
+			var query = _context.Games.AsQueryable();
+
+			// Text search in name and summary
+			if (!string.IsNullOrWhiteSpace(search))
+			{
+				query = query.Where(g => g.Name.Contains(search) || 
+									   (g.Summary != null && g.Summary.Contains(search)));
+			}
+
+			// Rating range filtering
+			if (minRating.HasValue)
+			{
+				query = query.Where(g => g.Rating >= minRating.Value);
+			}
+
+			if (maxRating.HasValue)
+			{
+				query = query.Where(g => g.Rating <= maxRating.Value);
+			}
+
+			// Release year range filtering
+			if (fromYear.HasValue)
+			{
+				query = query.Where(g => g.ReleaseDate.Year >= fromYear.Value);
+			}
+
+			if (toYear.HasValue)
+			{
+				query = query.Where(g => g.ReleaseDate.Year <= toYear.Value);
+			}
+
+			// Multiple platform filtering by ID - game must have at least one of the specified platforms
+			if (platformIds != null && platformIds.Length > 0)
+			{
+				query = query.Where(g => g.GamePlatforms.Any(gp => platformIds.Contains(gp.PlatformId)));
+			}
+
+			// Multiple company filtering by ID - game must have at least one of the specified companies
+			if (companyIds != null && companyIds.Length > 0)
+			{
+				query = query.Where(g => g.GameCompanies.Any(gc => companyIds.Contains(gc.CompanyId)));
+			}
+
+			// Multiple genre filtering by ID - game must have at least one of the specified genres
+			if (genreIds != null && genreIds.Length > 0)
+			{
+				query = query.Where(g => g.GameGenres.Any(gg => genreIds.Contains(gg.GenreId)));
+			}
+
+			// Include related data only if we need it for filtering or if no filtering is applied
+			// Note: When filtering by IDs, we don't need to include the related entities for filtering,
+			// but we might want them for the response. Let's include them conditionally.
+			var needsIncludes = (platformIds != null && platformIds.Length > 0) || 
+								(companyIds != null && companyIds.Length > 0) || 
+								(genreIds != null && genreIds.Length > 0);
+
+			if (needsIncludes)
+			{
+				query = query.Include(g => g.GamePlatforms)
+							 .ThenInclude(gp => gp.Platform)
+							 .Include(g => g.GameCompanies)
+							 .ThenInclude(gc => gc.Company)
+							 .Include(g => g.GameGenres)
+							 .ThenInclude(gg => gg.Genre);
+			}
+
+			// Apply sorting
+			query = ApplySorting(query, sortBy, sortOrder);
+
+			var totalCount = await query.CountAsync();
+
+			var items = await query
+				.Skip((pageNumber - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			return new PagedResult<Game>
+			{
+				Items = items,
+				TotalCount = totalCount,
+				PageNumber = pageNumber,
+				PageSize = pageSize
+			};
+		}
+
+		private IQueryable<Game> ApplySorting(IQueryable<Game> query, string? sortBy, string? sortOrder)
+		{
+			var isDescending = sortOrder?.ToLower() == "desc";
+
+			return sortBy?.ToLower() switch
+			{
+				"name" => isDescending 
+					? query.OrderByDescending(g => g.Name)
+					: query.OrderBy(g => g.Name),
+				
+				"rating" => isDescending 
+					? query.OrderByDescending(g => g.Rating)
+					: query.OrderBy(g => g.Rating),
+				
+				"releasedate" => isDescending 
+					? query.OrderByDescending(g => g.ReleaseDate)
+					: query.OrderBy(g => g.ReleaseDate),
+				
+				// Default sorting by name ascending
+				_ => query.OrderBy(g => g.Name)
+			};
+		}
+
 		public async Task InsertOrUpdateAsync(Game game)
 		{
 			var existing = await GetByExternalIdAsync(game.ExternalId);

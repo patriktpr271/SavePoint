@@ -2,23 +2,29 @@ import { GameCardDto, PagedResult } from '../types';
 
 export interface GameFilters {
   search?: string;
-  genres?: number[];
-  platforms?: number[];
+  genres?: string[];
+  platforms?: string[];
+  companies?: string[];
   minRating?: number;
   maxRating?: number;
-  releaseYearFrom?: number;
-  releaseYearTo?: number;
+  fromYear?: number;
+  toYear?: number;
   sortBy?: 'name' | 'rating' | 'releaseDate' | 'popularity';
   sortOrder?: 'asc' | 'desc';
 }
 
 export interface Genre {
-  id: number;
+  id: string;
   name: string;
 }
 
 export interface Platform {
-  id: number;
+  id: string;
+  name: string;
+}
+
+export interface Company {
+  id: string;
   name: string;
 }
 
@@ -34,6 +40,7 @@ export interface GameSearchResponse extends PagedResult<GameCardDto> {
 export interface FilterOptions {
   genres: Genre[];
   platforms: Platform[];
+  companies: Company[];
   minYear: number;
   maxYear: number;
 }

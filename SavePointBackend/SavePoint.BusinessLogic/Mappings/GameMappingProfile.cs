@@ -1,5 +1,6 @@
 using AutoMapper;
 using SavePoint.Common.Dtos.Games;
+using SavePoint.Common.Dtos.Lookups;
 using SavePoint.Entities.Games;
 
 namespace SavePoint.BusinessLogic.Mappings
@@ -27,10 +28,11 @@ namespace SavePoint.BusinessLogic.Mappings
                     src.GamePlatforms.Select(gp => new PlatformDto 
                     { 
                         Id = gp.Platform.Id, 
-                        Name = gp.Platform.Name 
+                        Name = gp.Platform.Name,
+                        Abbreviation = gp.Platform.Abbreviation
                     }).ToList()))
                 .ForMember(dest => dest.Companies, opt => opt.MapFrom(src =>
-                    src.GameCompanies.Select(gc => new CompanyDto 
+                    src.GameCompanies.Select(gc => new CompanyGameDto 
                     { 
                         Id = gc.Company.Id, 
                         Name = gc.Company.Name,
