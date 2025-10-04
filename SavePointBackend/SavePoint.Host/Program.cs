@@ -1,69 +1,42 @@
-using IGDB;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using SavePoint.BusinessLogic.Services;
-using SavePoint.BusinessLogic.Services.Interfaces;
-using SavePoint.DAL.Contexts;
-using SavePoint.DAL.Repositories;
-using SavePoint.DAL.Repositories.Interfaces;
-using System.Text.Json.Serialization;
-using SavePoint.BusinessLogic.Mappings;
+using SavePoint.Host.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    });
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddIdentityCore<SavePoint.Entities.Users.ApplicationUser>();
-
-// Add AutoMapper - now includes LookupMappingProfile
-builder.Services.AddAutoMapper(typeof(GameMappingProfile), typeof(UserMappingProfile), typeof(LookupMappingProfile));
-
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IIGDBImportService, IGDBImportService>();
-builder.Services.AddScoped<IGenreRepository, GenreRepository>();
-builder.Services.AddScoped<IGameRepository, GameRepository>();
-builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
-builder.Services.AddScoped<IPlatfromRepository, PlatfromRepository>();
-builder.Services.AddScoped<IPopularityRepository, PopularityRepository>();
-builder.Services.AddScoped<IGameService, GameService>();
-builder.Services.AddScoped<ILookupService, LookupService>(); // NEW: Lookup service registration
-
-builder.Services.AddSingleton<IGDBClient>(sp =>
-{
-	var clientId = "9gluavzyv9ymx4ft2u12h9dg7xah02";
-	var accessToken = "zkfuz4j1qcceo99ilidwugqzzjop16";
-	return new IGDBClient(clientId, accessToken);
-});
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-   options.UseSqlServer(connectionString));
-
-// Register Identity with EF Core stores
-builder.Services.AddIdentity<SavePoint.Entities.Users.ApplicationUser, IdentityRole>()
-	.AddEntityFrameworkStores<ApplicationDbContext>();
+// Register all application services using the organized configuration classes
+builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Seed the database
+await app.SeedDatabaseAsync();
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
+// Configure the web API pipeline
+app.ConfigureWebApiPipeline();
 
 app.Run();
+
+// No-op email sender for development/testing
+public class NoOpEmailSender : IEmailSender<SavePoint.Entities.Users.ApplicationUser>
+{
+    public Task SendConfirmationLinkAsync(SavePoint.Entities.Users.ApplicationUser user, string email, string confirmationLink)
+    {
+        // In a real application, you would send an email here
+        Console.WriteLine($"Confirmation link for {email}: {confirmationLink}");
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetLinkAsync(SavePoint.Entities.Users.ApplicationUser user, string email, string resetLink)
+    {
+        // In a real application, you would send an email here
+        Console.WriteLine($"Password reset link for {email}: {resetLink}");
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetCodeAsync(SavePoint.Entities.Users.ApplicationUser user, string email, string resetCode)
+    {
+        // In a real application, you would send an email here
+        Console.WriteLine($"Password reset code for {email}: {resetCode}");
+        return Task.CompletedTask;
+    }
+}

@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
-interface RegisterModalProps {
+interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSwitchToLogin?: () => void;
+  onLoginSuccess?: (user: any) => void;
+  onSwitchToRegister?: () => void;
 }
 
-const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitchToLogin }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess, onSwitchToRegister }) => {
+  const { login } = useAuth();
   const initialFormState = {
-    username: '',
-    displayName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    rememberMe: false
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -25,83 +26,41 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
     onClose();
   };
 
-  const validatePassword = (password: string): string[] => {
-    const validationErrors: string[] = [];
-    
-    if (password.length < 6) {
-      validationErrors.push("Password must be at least 6 characters long");
-    }
-    if (!/[A-Z]/.test(password)) {
-      validationErrors.push("Password must contain at least one uppercase letter");
-    }
-    if (!/[0-9]/.test(password)) {
-      validationErrors.push("Password must contain at least one number");
-    }
-    if (!/[^A-Za-z0-9]/.test(password)) {
-      validationErrors.push("Password must contain at least one special character");
-    }
-    
-    return validationErrors;
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
-    setErrors([]); // Clear errors when user types
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Basic validation
-    const newErrors: string[] = [];
-
-    if (!formData.username || !formData.displayName || !formData.email || !formData.password || !formData.confirmPassword) {
-      newErrors.push('All fields are required');
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.push('Passwords do not match');
-    }
-
-    // Validate password requirements
-    if (formData.password) {
-      const passwordErrors = validatePassword(formData.password);
-      newErrors.push(...passwordErrors);
-    }
-
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-      setLoading(false);
-      return;
-    }
+    setErrors([]);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for cookie-based auth
-        body: JSON.stringify({
-          userName: formData.username, // Match backend property name
-          displayName: formData.displayName,
-          email: formData.email,
-          password: formData.password
-        }),
+        credentials: 'include',
+        body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        login(data.user);
         handleClose();
-        // TODO: Show success message
+        if (onLoginSuccess) {
+          onLoginSuccess(data.user);
+        }
       } else {
-        const data = await response.json();
-        // Handle ModelState errors from backend
-        if (data.errors) {
+        if (data.message) {
+          setErrors([data.message]);
+        } else if (data.errors) {
           const modelStateErrors: string[] = [];
           Object.values(data.errors).forEach((errorArray: any) => {
             if (Array.isArray(errorArray)) {
@@ -109,14 +68,10 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
             }
           });
           setErrors(modelStateErrors);
-        } else if (data.message) {
-          setErrors([data.message]);
-        } else {
-          setErrors(['Registration failed. Please try again.']);
         }
       }
-    } catch (err) {
-      console.error('Registration error:', err);
+    } catch (error) {
+      console.error('Login error:', error);
       setErrors(['An unexpected error occurred. Please try again.']);
     } finally {
       setLoading(false);
@@ -130,43 +85,11 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
       <div className="modal-box max-w-md mx-auto bg-base-100 shadow-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-base-content mb-2">Join SavePoint</h2>
-          <p className="text-base-content/70">Create your account to start your gaming journey</p>
+          <h2 className="text-3xl font-bold text-base-content mb-2">Welcome Back</h2>
+          <p className="text-base-content/70">Sign in to your SavePoint account</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Username Field */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-medium">Username</span>
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Choose a username"
-              required
-            />
-          </div>
-
-          {/* Display Name Field */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-medium">Display Name</span>
-            </label>
-            <input
-              type="text"
-              name="displayName"
-              value={formData.displayName}
-              onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Your display name"
-              required
-            />
-          </div>
-
           {/* Email Field */}
           <div className="form-control">
             <label className="label">
@@ -194,25 +117,26 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
               value={formData.password}
               onChange={handleInputChange}
               className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Create a strong password"
+              placeholder="Enter your password"
               required
             />
           </div>
 
-          {/* Confirm Password Field */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-medium">Confirm Password</span>
+          {/* Remember Me */}
+          <div className="flex items-center justify-between">
+            <label className="cursor-pointer flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleInputChange}
+                className="checkbox checkbox-primary checkbox-sm"
+              />
+              <span className="label-text">Remember me</span>
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Confirm your password"
-              required
-            />
+            <a className="text-primary hover:text-primary-focus text-sm cursor-pointer">
+              Forgot password?
+            </a>
           </div>
 
           {/* Error Display */}
@@ -238,31 +162,31 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
             {loading ? (
               <>
                 <span className="loading loading-spinner loading-sm"></span>
-                Creating Account...
+                Signing In...
               </>
             ) : (
-              'Create Account'
+              'Sign In'
             )}
           </button>
 
           {/* Divider */}
           <div className="divider my-6">or</div>
 
-          {/* Sign In Link */}
+          {/* Sign Up Link */}
           <div className="text-center">
             <p className="text-base-content/70">
-              Already have an account?{' '}
+              Don't have an account?{' '}
               <button
                 type="button"
                 onClick={() => {
-                  if (onSwitchToLogin) {
+                  if (onSwitchToRegister) {
                     handleClose();
-                    onSwitchToLogin();
+                    onSwitchToRegister();
                   }
                 }}
                 className="text-primary hover:text-primary-focus font-semibold underline"
               >
-                Sign in here
+                Create one here
               </button>
             </p>
           </div>
@@ -287,4 +211,4 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
   );
 };
 
-export default RegisterModal;
+export default LoginModal;

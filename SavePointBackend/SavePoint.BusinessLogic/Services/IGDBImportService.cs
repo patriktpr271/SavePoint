@@ -3,11 +3,6 @@ using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Games;
 using SavePoint.Common.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SavePoint.Entities.Popularity;
 
 namespace SavePoint.BusinessLogic.Services
