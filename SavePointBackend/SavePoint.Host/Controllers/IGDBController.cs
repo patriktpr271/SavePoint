@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SavePoint.BusinessLogic.Services;
 using SavePoint.BusinessLogic.Services.Interfaces;
 
@@ -7,6 +8,7 @@ namespace SavePoint.Host.Controllers
 {
 	[ApiController]
 	[Route("api/[controller]")]
+	[Authorize(Roles = "Admin")] // Require Admin role for all endpoints
 	public class ImportController : ControllerBase
 	{
 		private readonly IIGDBImportService _importService;

@@ -22,5 +22,25 @@ namespace SavePoint.BusinessLogic.Services
 			var user = _mapper.Map<ApplicationUser>(dto);
 			return await _userManager.CreateAsync(user, dto.Password);
 		}
+
+		public async Task<(bool Success, ApplicationUser? User)> ValidateUserAsync(LoginDto dto)
+		{
+			var user = await _userManager.FindByEmailAsync(dto.Email);
+			if (user != null && await _userManager.CheckPasswordAsync(user, dto.Password))
+			{
+				return (true, user);
+			}
+			return (false, null);
+		}
+
+		public async Task<ApplicationUser?> GetUserByIdAsync(string userId)
+		{
+			return await _userManager.FindByIdAsync(userId);
+		}
+
+		public async Task<ApplicationUser?> GetUserByEmailAsync(string email)
+		{
+			return await _userManager.FindByEmailAsync(email);
+		}
 	}
 }
