@@ -66,22 +66,39 @@ namespace SavePoint.Host.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _signInManager.PasswordSignInAsync(dto.Email, dto.Password, dto.RememberMe, lockoutOnFailure: false);
+            // Find user by email or username
+            ApplicationUser? user = null;
+            
+            // First try to find by email
+            user = await _userManager.FindByEmailAsync(dto.EmailOrUsername);
+            
+            // If not found by email, try to find by username
+            if (user == null)
+            {
+                user = await _userManager.FindByNameAsync(dto.EmailOrUsername);
+            }
+
+            if (user == null)
+            {
+                return BadRequest(new { message = "Invalid email/username or password" });
+            }
+
+            // Use the found user's UserName for sign-in
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, dto.Password, dto.RememberMe, lockoutOnFailure: false);
             
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(dto.Email);
-                var roles = await _userManager.GetRolesAsync(user!);
+                var roles = await _userManager.GetRolesAsync(user);
                 
                 return Ok(new 
                 { 
                     message = "Login successful",
                     user = new 
                     {
-                        id = user?.Id,
-                        username = user?.UserName,
-                        email = user?.Email,
-                        displayName = user?.DisplayName,
+                        id = user.Id,
+                        username = user.UserName,
+                        email = user.Email,
+                        displayName = user.DisplayName,
                         roles = roles
                     }
                 });
@@ -92,7 +109,17 @@ namespace SavePoint.Host.Controllers
                 return BadRequest(new { message = "Account is locked out" });
             }
 
-            return BadRequest(new { message = "Invalid email or password" });
+            if (result.IsNotAllowed)
+            {
+                return BadRequest(new { message = "Sign in not allowed. Please confirm your email or phone number." });
+            }
+
+            if (result.RequiresTwoFactor)
+            {
+                return BadRequest(new { message = "Two-factor authentication required" });
+            }
+
+            return BadRequest(new { message = "Invalid email/username or password" });
         }
 
         [HttpPost("logout")]

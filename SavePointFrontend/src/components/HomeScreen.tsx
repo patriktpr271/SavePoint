@@ -10,8 +10,8 @@ const HomeScreen: React.FC = () => {
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-center mb-4">
-            🎮 SavePoint Gaming Hub
+          <h1 className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-emerald-500 to-orange-500 bg-clip-text text-transparent">
+            SavePoint Gaming Hub
           </h1>
           <p className="text-xl text-center text-base-content/70 mx-auto">
             Discover the most popular games across different categories

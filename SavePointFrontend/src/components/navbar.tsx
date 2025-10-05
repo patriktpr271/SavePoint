@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, Search } from "lucide-react";
+import { Menu, X, Search, User } from "lucide-react";
 import RegisterModal from "./RegisterModal";
 import LoginModal from "./LoginModal";
 import { useAuth } from "../contexts/AuthContext";
@@ -37,7 +37,7 @@ export default function Navbar() {
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex-shrink-0">
-              <Link to="/" className="text-2xl font-bold hover:text-primary transition-colors">SavePoint</Link>
+              <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-orange-500 bg-clip-text text-transparent hover:from-emerald-600 hover:to-orange-600 transition-all">SavePoint</Link>
             </div>
             <div className="loading loading-spinner loading-sm"></div>
           </div>
@@ -53,7 +53,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Left - Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="text-2xl font-bold hover:text-primary transition-colors">SavePoint</Link>
+            <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hover:from-emerald-600 hover:to-orange-600 transition-all">SavePoint</Link>
           </div>
 
           {/* Center - Menu (desktop only) */}
@@ -61,7 +61,11 @@ export default function Navbar() {
             {user ? (
               <>
                 <span className="text-base-content">Welcome, {user.displayName}!</span>
-                <a className="hover:underline cursor-pointer">Lists</a>
+                <Link to="/profile" className="hover:underline cursor-pointer flex items-center gap-1">
+                  <User size={16} />
+                  Profile
+                </Link>
+                <Link to="/lists" className="hover:underline cursor-pointer">Lists</Link>
                 {user.roles.includes('Admin') && (
                   <a className="hover:underline cursor-pointer text-warning">Admin Panel</a>
                 )}
@@ -70,7 +74,7 @@ export default function Navbar() {
             ) : (
               <>
                 <a className="hover:underline cursor-pointer" onClick={() => setIsLoginModalOpen(true)}>Sign In</a>
-                <a className="hover:underline cursor-pointer">Lists</a>
+                <Link to="/lists" className="hover:underline cursor-pointer">Lists</Link>
                 <a className="hover:underline cursor-pointer" onClick={() => setIsRegisterModalOpen(true)}>Create Account</a>
               </>
             )}
@@ -83,7 +87,7 @@ export default function Navbar() {
               <input
                 type="text"
                 placeholder="Search..."
-                className="input input-bordered w-40 md:w-56"
+                className="input input-bordered w-40 md:w-56 bg-base-200 text-base-content border-base-300 focus:border-primary"
               />
             </div>
           </div>
@@ -92,7 +96,7 @@ export default function Navbar() {
           <div className="flex items-center md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-700 focus:outline-none"
+              className="text-base-content focus:outline-none"
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -106,7 +110,11 @@ export default function Navbar() {
           {user ? (
             <>
               <div className="text-base-content font-medium">Welcome, {user.displayName}!</div>
-              <a className="block hover:underline">Lists</a>
+              <Link to="/profile" className="block hover:underline flex items-center gap-2" onClick={() => setIsOpen(false)}>
+                <User size={16} />
+                Profile
+              </Link>
+              <Link to="/lists" className="block hover:underline" onClick={() => setIsOpen(false)}>Lists</Link>
               {user.roles.includes('Admin') && (
                 <a className="block hover:underline text-warning">Admin Panel</a>
               )}
@@ -115,7 +123,7 @@ export default function Navbar() {
           ) : (
             <>
               <a className="block hover:underline" onClick={() => { setIsLoginModalOpen(true); setIsOpen(false); }}>Sign In</a>
-              <a className="block hover:underline">Lists</a>
+              <Link to="/lists" className="block hover:underline" onClick={() => setIsOpen(false)}>Lists</Link>
               <a className="block hover:underline" onClick={() => { setIsRegisterModalOpen(true); setIsOpen(false); }}>Create Account</a>
             </>
           )}

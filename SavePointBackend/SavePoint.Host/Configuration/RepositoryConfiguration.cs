@@ -13,6 +13,7 @@ namespace SavePoint.Host.Configuration
             services.AddScoped<ICompanyRepository, CompanyRepository>();
             services.AddScoped<IPlatfromRepository, PlatfromRepository>();
             services.AddScoped<IPopularityRepository, PopularityRepository>();
+            services.AddScoped<IUserListRepository, UserListRepository>();
 
             return services;
         }

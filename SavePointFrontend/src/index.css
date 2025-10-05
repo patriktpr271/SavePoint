@@ -1,12 +1,178 @@
+@import 'tailwindcss';
+
+/* Dark theme base - force dark background but allow component/* Force the main profile container to be dark */
+.bg-gradient-to-r.from-base-100.to-base-200 {
+  background: linear-gradient(to right, #1f2937, #111827) !important;
+}
+
+/* Force the card gradients to be dark */
+.bg-gradient-to-br.from-base-200.to-base-300 {
+  background: linear-gradient(to bottom right, #111827, #374151) !important;
+}
+
+/* Modal and dialog styling */
+.modal-box {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+.stat {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+.stat-title {
+  color: rgba(249, 250, 251, 0.7) !important;
+}
+
+.stat-value {
+  color: #f9fafb !important;
+}
+
+.badge {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+
+.badge-primary {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.badge-secondary {
+  background-color: #f97316 !important;
+  color: #ffffff !important;
+}ors */
+html {
+  background-color: #111827 !important;
+}
+
+body {
+  background-color: #111827 !important;
+  color: #f9fafb;
+}
+
+#root {
+  background-color: #111827 !important;
+  min-height: 100vh;
+}
+
+/* Ensure cards and components use proper theme colors */
+.bg-base-100 {
+  background-color: #1f2937 !important;
+}
+
+.bg-base-200 {
+  background-color: #111827 !important;
+}
+
+.bg-base-300 {
+  background-color: #374151 !important;
+}
+
+/* Dark theme for inputs and form elements */
+.input {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+.input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+.input::placeholder {
+  color: #9ca3af !important;
+}
+
+.select {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+/* Ensure text is visible on dark backgrounds */
+.text-base-content {
+  color: #f9fafb !important;
+}
+
+.text-base-content\/70 {
+  color: rgba(249, 250, 251, 0.7) !important;
+}
+
+.text-base-content\/60 {
+  color: rgba(249, 250, 251, 0.6) !important;
+}
+
+.text-base-content\/90 {
+  color: rgba(249, 250, 251, 0.9) !important;
+}
+
+/* Ensure all text elements are visible */
+h1, h2, h3, h4, h5, h6, p, span, div {
+  color: inherit;
+}
+
+/* Specific text color for headings and labels */
+.font-semibold, .font-medium, .card-title {
+  color: #f9fafb !important;
+}
+
+/* Gaming gradient overrides for branding */
+.bg-gradient-to-r.from-primary.to-secondary {
+  background: linear-gradient(to right, #10b981, #f97316) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.bg-gradient-to-r.from-emerald-500.to-orange-500 {
+  background: linear-gradient(to right, #10b981, #f97316) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Ensure gradient text is not overridden */
+.text-transparent {
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Override any remaining light backgrounds */
+.bg-white {
+  background-color: #1f2937 !important;
+}
+
+.bg-gray-50 {
+  background-color: #374151 !important;
+}
+
+.bg-gray-100 {
+  background-color: #374151 !important;
+}
+
+/* Override DaisyUI tabs styling */
+.tabs-boxed {
+  background-color: #374151 !important;
+}
+
+.tab-active {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+/* Force the main profile container to be dark */
+.bg-gradient-to-r.from-base-100.to-base-200 {
+  background: linear-gradient(to right, #1f2937, #111827) !important;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -27,58 +193,6 @@ body {
   height: 100%;
   width: 100%;
   min-height: 100vh;
-  background-color: hsl(var(--b2));
-}
-
-#root {
-  width: 100%;
-  min-height: 100vh;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }
 
 /* Custom utilities for better text handling */

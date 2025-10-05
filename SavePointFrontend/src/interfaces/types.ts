@@ -54,3 +54,62 @@ export const POPULARITY_TYPES: PopularityType[] = [
     icon: "🔥"
   }
 ];
+
+// User List related DTOs
+export interface UserListDto {
+  id: string; // Guid from backend
+  name: string;
+  description?: string;
+  isPublic: boolean;
+  isDefault: boolean;
+  defaultListType?: string;
+  createdAt: string; // DateTime serialized as string
+  updatedAt?: string; // DateTime serialized as string
+  userId: string;
+  userName?: string;
+  gameCount: number;
+  upvotes: number;
+  downvotes: number;
+  userVote?: boolean; // true = upvote, false = downvote, null = no vote
+  games?: GameCardDto[]; // Only included when includeGames=true
+}
+
+export interface CreateUserListDto {
+  name: string;
+  description?: string;
+  isPublic: boolean;
+}
+
+export interface UpdateUserListDto {
+  name: string;
+  description?: string;
+  isPublic: boolean;
+}
+
+export interface AddGameToListDto {
+  gameId: string;
+}
+
+export interface VoteOnListDto {
+  isUpvote: boolean;
+}
+
+// Default list types enum
+export enum DefaultListType {
+  WantToPlay = 'WantToPlay',
+  Finished = 'Finished'
+}
+
+// Extended User interface to include navigation properties
+export interface UserProfileDto {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  bio?: string;
+  roles: string[];
+  createdAt: string;
+  lastLoginAt?: string;
+  listCount: number;
+  publicListCount: number;
+}

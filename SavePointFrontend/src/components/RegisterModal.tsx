@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleClose = () => {
     setFormData(initialFormState);
@@ -127,10 +130,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-md mx-auto bg-base-100 shadow-2xl">
+      <div className="modal-box max-w-md mx-auto bg-gradient-to-br from-base-100 to-base-200 shadow-2xl border border-base-300">
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-base-content mb-2">Join SavePoint</h2>
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-2xl font-bold text-white">SP</span>
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-emerald-500 bg-clip-text text-transparent mb-2">Join SavePoint</h2>
           <p className="text-base-content/70">Create your account to start your gaming journey</p>
         </div>
         
@@ -138,14 +144,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           {/* Username Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Username</span>
+              <span className="label-text font-semibold text-base-content/80">Username</span>
             </label>
             <input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
+              className="input input-bordered w-full focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
               placeholder="Choose a username"
               required
             />
@@ -154,14 +160,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           {/* Display Name Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Display Name</span>
+              <span className="label-text font-semibold text-base-content/80">Display Name</span>
             </label>
             <input
               type="text"
               name="displayName"
               value={formData.displayName}
               onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
+              className="input input-bordered w-full focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
               placeholder="Your display name"
               required
             />
@@ -170,14 +176,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           {/* Email Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Email Address</span>
+              <span className="label-text font-semibold text-base-content/80">Email Address</span>
             </label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
+              className="input input-bordered w-full focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
               placeholder="Enter your email"
               required
             />
@@ -186,33 +192,49 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           {/* Password Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Password</span>
+              <span className="label-text font-semibold text-base-content/80">Password</span>
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Create a strong password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="input input-bordered w-full pr-12 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
+                placeholder="Create a strong password"
+                required
+              />
+              <span
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/60 hover:text-base-content transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+            </div>
           </div>
 
           {/* Confirm Password Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Confirm Password</span>
+              <span className="label-text font-semibold text-base-content/80">Confirm Password</span>
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Confirm your password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="input input-bordered w-full pr-12 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
+                placeholder="Confirm your password"
+                required
+              />
+              <span
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/60 hover:text-base-content transition-colors cursor-pointer"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+            </div>
           </div>
 
           {/* Error Display */}
@@ -232,7 +254,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           {/* Submit Button */}
           <button 
             type="submit" 
-            className="btn btn-primary w-full py-3 text-lg font-semibold" 
+            className="btn bg-gradient-to-r from-orange-500 to-emerald-500 hover:from-orange-600 hover:to-emerald-600 border-0 text-white w-full py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5" 
             disabled={loading}
           >
             {loading ? (
@@ -246,10 +268,10 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           </button>
 
           {/* Divider */}
-          <div className="divider my-6">or</div>
+          <div className="divider my-6 text-base-content/50">or</div>
 
           {/* Sign In Link */}
-          <div className="text-center">
+          <div className="text-center bg-base-200/50 rounded-lg p-4 border border-base-300/50">
             <p className="text-base-content/70">
               Already have an account?{' '}
               <button
@@ -260,7 +282,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
                     onSwitchToLogin();
                   }
                 }}
-                className="text-primary hover:text-primary-focus font-semibold underline"
+                className="text-orange-600 hover:text-orange-700 font-semibold underline decoration-transparent hover:decoration-current transition-all"
               >
                 Sign in here
               </button>
@@ -271,7 +293,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose, onSwitch
           <div className="modal-action mt-8">
             <button 
               type="button" 
-              className="btn btn-ghost w-full" 
+              className="btn btn-ghost w-full hover:bg-base-200 transition-colors" 
               onClick={handleClose} 
               disabled={loading}
             >
