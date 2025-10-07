@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <SpaRoot>..\..\SavePointFrontend\</SpaRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +24,44 @@
     <ProjectReference Include="..\SavePoint.DAL\SavePoint.DAL.csproj" />
     <ProjectReference Include="..\SavePoint.Entities\SavePoint.Entities.csproj" />
   </ItemGroup>
+
+  <!-- Frontend build integration -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <!-- Include pre-built frontend files -->
+  <ItemGroup>
+    <Content Include="$(SpaRoot)dist\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot\" Condition="Exists('$(SpaRoot)dist')" />
+  </ItemGroup>
+
+  <!-- Build frontend locally before publish -->
+  <Target Name="BuildFrontendLocal" BeforeTargets="Publish" Condition="'$(PublishUrl)' != ''">
+    <Message Text="Building frontend locally before publish..." Importance="high" />
+    
+    <!-- Build the frontend locally -->
+    <Exec Command="npm install" WorkingDirectory="$(SpaRoot)" />
+    <Exec Command="npm run build" WorkingDirectory="$(SpaRoot)" />
+  </Target>
+
+  <!-- Ensure frontend files are included in publish -->
+  <Target Name="IncludeFrontendInPublish" BeforeTargets="ComputeFilesToPublish">
+    <Message Text="Including frontend files in publish..." Importance="high" />
+    
+    <ItemGroup Condition="Exists('$(SpaRoot)dist')">
+      <_FrontendFiles Include="$(SpaRoot)dist\**\*" />
+      <ResolvedFileToPublish Include="@(_FrontendFiles)" Condition="'%(_FrontendFiles.Extension)' != ''">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+  <!-- Clean frontend on clean -->
+  <Target Name="CleanFrontend" AfterTargets="Clean">
+    <Message Text="Cleaning frontend build output..." Importance="high" />
+    <RemoveDir Directories="$(SpaRoot)dist" Condition="Exists('$(SpaRoot)dist')" />
+  </Target>
 
 </Project>

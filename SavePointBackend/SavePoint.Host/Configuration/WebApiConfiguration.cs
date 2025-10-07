@@ -35,11 +35,18 @@ namespace SavePoint.Host.Configuration
             // CORS middleware (should be before authentication)
             app.UseCors("AllowFrontend");
 
+            // Serve static files from wwwroot (for frontend)
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
             // Authentication & Authorization middleware (order is important!)
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
+
+            // Fallback to index.html for SPA routing
+            app.MapFallbackToFile("index.html");
 
             return app;
         }

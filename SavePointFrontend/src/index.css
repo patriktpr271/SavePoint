@@ -43,6 +43,56 @@
 .badge-secondary {
   background-color: #f97316 !important;
   color: #ffffff !important;
+}
+
+/* Login and Register Modal styling */
+.modal .modal-box {
+  background: linear-gradient(135deg, #1f2937, #111827) !important;
+  border: 1px solid #374151 !important;
+  color: #f9fafb !important;
+}
+
+/* Specific override for modal gradient backgrounds */
+.modal-box.bg-gradient-to-br.from-base-100.to-base-200 {
+  background: linear-gradient(to bottom right, #1f2937, #111827) !important;
+}
+
+/* Form controls in modals */
+.modal .form-control label {
+  color: #f9fafb !important;
+}
+
+.modal .label-text {
+  color: rgba(249, 250, 251, 0.8) !important;
+}
+
+/* Buttons in modals */
+.modal .btn {
+  border-color: #374151 !important;
+}
+
+.modal .btn-outline {
+  background-color: transparent !important;
+  border-color: #6b7280 !important;
+  color: #f9fafb !important;
+}
+
+.modal .btn-outline:hover {
+  background-color: #374151 !important;
+  border-color: #6b7280 !important;
+}
+
+/* Error alerts in modals */
+.modal .alert {
+  background-color: #374151 !important;
+  border-color: #ef4444 !important;
+  color: #f9fafb !important;
+}
+
+.modal .alert-error {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
 }ors */
 html {
   background-color: #111827 !important;
