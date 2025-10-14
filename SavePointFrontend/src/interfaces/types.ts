@@ -54,3 +54,92 @@ export const POPULARITY_TYPES: PopularityType[] = [
     icon: "🔥"
   }
 ];
+
+// User List related DTOs
+export interface UserListDto {
+  id: string; // Guid from backend
+  name: string;
+  description?: string;
+  isPublic: boolean;
+  isDefault: boolean;
+  defaultListType?: string;
+  createdAt: string; // DateTime serialized as string
+  updatedAt?: string; // DateTime serialized as string
+  userId: string;
+  userName?: string;
+  gameCount: number;
+  upvotes: number;
+  downvotes: number;
+  userVote?: boolean; // true = upvote, false = downvote, null = no vote
+  games?: GameCardDto[]; // Only included when includeGames=true
+}
+
+export interface CreateUserListDto {
+  name: string;
+  description?: string;
+  isPublic: boolean;
+}
+
+export interface UpdateUserListDto {
+  name: string;
+  description?: string;
+  isPublic: boolean;
+}
+
+export interface AddGameToListDto {
+  gameId: string;
+}
+
+export interface VoteOnListDto {
+  isUpvote: boolean;
+}
+
+// Default list types enum
+export enum DefaultListType {
+  WantToPlay = 'WantToPlay',
+  Finished = 'Finished'
+}
+
+// Extended User interface to include navigation properties
+export interface UserProfileDto {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  bio?: string;
+  roles: string[];
+  createdAt: string;
+  lastLoginAt?: string;
+  listCount: number;
+  publicListCount: number;
+}
+
+// Review related DTOs
+export interface ReviewDto {
+  id: string; // Guid from backend
+  userId: string;
+  gameId: string;
+  rating: number; // 1-5 integer
+  content?: string;
+  createdAt: string; // DateTime serialized as string
+  updatedAt: string; // DateTime serialized as string
+  userName?: string; // From navigation property
+  userDisplayName?: string; // From navigation property
+  gameName?: string; // From navigation property
+}
+
+export interface CreateReviewDto {
+  gameId: string;
+  rating: number; // 1-5 integer, required
+  content?: string; // Optional text content
+}
+
+export interface UpdateReviewDto {
+  rating: number; // 1-5 integer, required
+  content?: string; // Optional text content
+}
+
+export interface ReviewStatisticsDto {
+  totalReviews: number;
+  averageRating: number;
+}

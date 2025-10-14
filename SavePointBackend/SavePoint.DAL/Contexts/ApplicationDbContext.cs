@@ -29,6 +29,7 @@ namespace SavePoint.DAL.Contexts
 		public DbSet<Review> Reviews { get; set; }
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListItem> UserListItems { get; set; }
+        public DbSet<UserListVote> UserListVotes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -152,6 +153,23 @@ namespace SavePoint.DAL.Contexts
                     .WithMany(g => g.UserListItems)
                     .HasForeignKey(uli => uli.GameId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ========= User List Vote =========
+            modelBuilder.Entity<UserListVote>(entity =>
+            {
+                entity.HasKey(ulv => ulv.Id);
+                entity.HasIndex(ulv => new { ulv.UserListId, ulv.UserId }).IsUnique();
+                
+                entity.HasOne(ulv => ulv.UserList)
+                    .WithMany(ul => ul.Votes)
+                    .HasForeignKey(ulv => ulv.UserListId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(ulv => ulv.User)
+                    .WithMany(u => u.UserListVotes)
+                    .HasForeignKey(ulv => ulv.UserId)
+                    .OnDelete(DeleteBehavior.NoAction); // Prevent cascading delete conflicts
             });
 
 			// ========= Popularity =========

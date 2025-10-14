@@ -17,5 +17,6 @@ namespace SavePoint.Entities.Users
 		// Navigation properties
 		public ICollection<Review> Reviews { get; set; } = new List<Review>();
 		public ICollection<UserList> UserLists { get; set; } = new List<UserList>();
+		public ICollection<UserListVote> UserListVotes { get; set; } = new List<UserListVote>();
 	}
 }

@@ -378,20 +378,41 @@ namespace SavePoint.DAL.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DefaultListType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DownvoteCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("UpvoteCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("VoteScore")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -426,6 +447,38 @@ namespace SavePoint.DAL.Migrations
                         .IsUnique();
 
                     b.ToTable("UserListItems");
+                });
+
+            modelBuilder.Entity("SavePoint.Entities.Lists.UserListVote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUpvote")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("UserListId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserListId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserListVotes");
                 });
 
             modelBuilder.Entity("SavePoint.Entities.Popularity.Popularity", b =>
@@ -711,6 +764,25 @@ namespace SavePoint.DAL.Migrations
                     b.Navigation("UserList");
                 });
 
+            modelBuilder.Entity("SavePoint.Entities.Lists.UserListVote", b =>
+                {
+                    b.HasOne("SavePoint.Entities.Users.ApplicationUser", "User")
+                        .WithMany("UserListVotes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("SavePoint.Entities.Lists.UserList", "UserList")
+                        .WithMany("Votes")
+                        .HasForeignKey("UserListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserList");
+                });
+
             modelBuilder.Entity("SavePoint.Entities.Popularity.Popularity", b =>
                 {
                     b.HasOne("SavePoint.Entities.Games.Game", "Game")
@@ -774,11 +846,15 @@ namespace SavePoint.DAL.Migrations
             modelBuilder.Entity("SavePoint.Entities.Lists.UserList", b =>
                 {
                     b.Navigation("UserListItems");
+
+                    b.Navigation("Votes");
                 });
 
             modelBuilder.Entity("SavePoint.Entities.Users.ApplicationUser", b =>
                 {
                     b.Navigation("Reviews");
+
+                    b.Navigation("UserListVotes");
 
                     b.Navigation("UserLists");
                 });

@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LoginModalProps {
@@ -11,7 +12,7 @@ interface LoginModalProps {
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess, onSwitchToRegister }) => {
   const { login } = useAuth();
   const initialFormState = {
-    email: '',
+    emailOrUsername: '',
     password: '',
     rememberMe: false
   };
@@ -19,6 +20,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleClose = () => {
     setFormData(initialFormState);
@@ -82,26 +84,29 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-md mx-auto bg-base-100 shadow-2xl">
+      <div className="modal-box max-w-md mx-auto bg-gradient-to-br from-base-100 to-base-200 shadow-2xl border border-base-300">
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-base-content mb-2">Welcome Back</h2>
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-emerald-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-2xl font-bold text-white">SP</span>
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-orange-500 bg-clip-text text-transparent mb-2">Welcome Back</h2>
           <p className="text-base-content/70">Sign in to your SavePoint account</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email Field */}
+          {/* Email or Username Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Email Address</span>
+              <span className="label-text font-semibold text-base-content/80">Email or Username</span>
             </label>
             <input
-              type="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              name="emailOrUsername"
+              value={formData.emailOrUsername}
               onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Enter your email"
+              className="input input-bordered w-full focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
+              placeholder="Enter your email or username"
               required
             />
           </div>
@@ -109,22 +114,30 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
           {/* Password Field */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Password</span>
+              <span className="label-text font-semibold text-base-content/80">Password</span>
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="input input-bordered w-full focus:input-primary transition-colors"
-              placeholder="Enter your password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="input input-bordered w-full pr-12 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-gray-700 transition-all duration-200 hover:bg-gray-600"
+                placeholder="Enter your password"
+                required
+              />
+              <span
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/60 hover:text-base-content transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+            </div>
           </div>
 
           {/* Remember Me */}
           <div className="flex items-center justify-between">
-            <label className="cursor-pointer flex items-center gap-2">
+            <label className="cursor-pointer flex items-center gap-2 hover:bg-base-200/50 rounded-lg p-2 -m-2 transition-colors">
               <input
                 type="checkbox"
                 name="rememberMe"
@@ -132,9 +145,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                 onChange={handleInputChange}
                 className="checkbox checkbox-primary checkbox-sm"
               />
-              <span className="label-text">Remember me</span>
+              <span className="label-text font-medium">Remember me</span>
             </label>
-            <a className="text-primary hover:text-primary-focus text-sm cursor-pointer">
+            <a className="text-primary hover:text-primary-focus text-sm cursor-pointer font-medium underline decoration-transparent hover:decoration-current transition-all">
               Forgot password?
             </a>
           </div>
@@ -156,7 +169,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
           {/* Submit Button */}
           <button 
             type="submit" 
-            className="btn btn-primary w-full py-3 text-lg font-semibold" 
+            className="btn bg-gradient-to-r from-emerald-500 to-orange-500 hover:from-emerald-600 hover:to-orange-600 border-0 text-white w-full py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5" 
             disabled={loading}
           >
             {loading ? (
@@ -170,10 +183,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
           </button>
 
           {/* Divider */}
-          <div className="divider my-6">or</div>
+          <div className="divider my-6 text-base-content/50">or</div>
 
           {/* Sign Up Link */}
-          <div className="text-center">
+          <div className="text-center bg-base-200/50 rounded-lg p-4 border border-base-300/50">
             <p className="text-base-content/70">
               Don't have an account?{' '}
               <button
@@ -184,7 +197,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
                     onSwitchToRegister();
                   }
                 }}
-                className="text-primary hover:text-primary-focus font-semibold underline"
+                className="text-emerald-600 hover:text-emerald-700 font-semibold underline decoration-transparent hover:decoration-current transition-all"
               >
                 Create one here
               </button>
@@ -195,7 +208,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess
           <div className="modal-action mt-8">
             <button 
               type="button" 
-              className="btn btn-ghost w-full" 
+              className="btn btn-ghost w-full hover:bg-base-200 transition-colors" 
               onClick={handleClose} 
               disabled={loading}
             >

@@ -23,7 +23,7 @@ namespace SavePoint.Host.Configuration
             services.AddIdentityServices();
 
             // CORS configuration
-            services.AddCorsConfiguration();
+            services.AddCorsConfiguration(configuration);
 
             // AutoMapper profiles
             services.AddMappingProfiles();
