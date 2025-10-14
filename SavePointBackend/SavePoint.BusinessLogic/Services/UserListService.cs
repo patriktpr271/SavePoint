@@ -1,6 +1,7 @@
 using AutoMapper;
 using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.Common.Dtos.Lists;
+using SavePoint.Common.Exceptions;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Common;
 using SavePoint.Entities.Lists;
@@ -20,15 +21,15 @@ namespace SavePoint.BusinessLogic.Services
 			_mapper = mapper;
 		}
 
-		public async Task<UserListDto?> GetListByIdAsync(Guid id, string? currentUserId = null)
+		public async Task<UserListDto> GetListByIdAsync(Guid id, string? currentUserId = null)
 		{
 			var userList = await _userListRepository.GetByIdWithDetailsAsync(id);
 			if (userList == null)
-				return null;
+				throw new NotFoundException("List", id);
 
 			// Check privacy settings
 			if (!userList.IsPublic && userList.UserId != currentUserId)
-				return null;
+				throw new ForbiddenException("access", "private list");
 
 			var dto = _mapper.Map<UserListDto>(userList);
 			
@@ -42,15 +43,15 @@ namespace SavePoint.BusinessLogic.Services
 			return dto;
 		}
 
-		public async Task<UserListDto?> GetListWithGamesAsync(Guid id, string? currentUserId = null)
+		public async Task<UserListDto> GetListWithGamesAsync(Guid id, string? currentUserId = null)
 		{
 			var userList = await _userListRepository.GetByIdWithGamesAsync(id);
 			if (userList == null)
-				return null;
+				throw new NotFoundException("List", id);
 
 			// Check privacy settings
 			if (!userList.IsPublic && userList.UserId != currentUserId)
-				return null;
+				throw new ForbiddenException("access", "private list");
 
 			var dto = _mapper.Map<UserListDto>(userList);
 			
@@ -127,11 +128,14 @@ namespace SavePoint.BusinessLogic.Services
 			return _mapper.Map<UserListDto>(createdList);
 		}
 
-		public async Task<UserListDto?> UpdateListAsync(Guid id, UpdateUserListDto dto, string userId)
+		public async Task<UserListDto> UpdateListAsync(Guid id, UpdateUserListDto dto, string userId)
 		{
 			var userList = await _userListRepository.GetByIdAsync(id);
-			if (userList == null || userList.UserId != userId)
-				return null;
+			if (userList == null)
+				throw new NotFoundException("List", id);
+			
+			if (userList.UserId != userId)
+				throw new ForbiddenException("update", "list");
 
 			// Don't allow updating default lists' core properties
 			if (!userList.IsDefault)
@@ -151,47 +155,53 @@ namespace SavePoint.BusinessLogic.Services
 			return _mapper.Map<UserListDto>(updatedList);
 		}
 
-		public async Task<bool> DeleteListAsync(Guid id, string userId)
+		public async Task DeleteListAsync(Guid id, string userId)
 		{
 			var userList = await _userListRepository.GetByIdAsync(id);
-			if (userList == null || userList.UserId != userId)
-				return false;
+			if (userList == null)
+				throw new NotFoundException("List", id);
+			
+			if (userList.UserId != userId)
+				throw new ForbiddenException("delete", "list");
 
 			// Don't allow deleting default lists
 			if (userList.IsDefault)
-				return false;
+				throw new BusinessException("Cannot delete default lists", "DELETE_DEFAULT_LIST", System.Net.HttpStatusCode.BadRequest);
 
 			await _userListRepository.DeleteAsync(id);
-			return true;
 		}
 
-		public async Task<bool> AddGameToListAsync(Guid listId, Guid gameId, string userId)
+		public async Task AddGameToListAsync(Guid listId, Guid gameId, string userId)
 		{
 			var userList = await _userListRepository.GetByIdAsync(listId);
-			if (userList == null || userList.UserId != userId)
-				return false;
+			if (userList == null)
+				throw new NotFoundException("List", listId);
+			
+			if (userList.UserId != userId)
+				throw new ForbiddenException("add games to", "list");
 
 			// Check if game exists
 			var game = await _gameRepository.GetByIdWithDetailsAsync(gameId);
 			if (game == null)
-				return false;
+				throw new NotFoundException("Game", gameId);
 
 			// Check if game is already in the list
 			if (await _userListRepository.IsGameInListAsync(listId, gameId))
-				return false;
+				throw new ConflictException("Game is already in this list");
 
 			await _userListRepository.AddGameToListAsync(listId, gameId);
-			return true;
 		}
 
-		public async Task<bool> RemoveGameFromListAsync(Guid listId, Guid gameId, string userId)
+		public async Task RemoveGameFromListAsync(Guid listId, Guid gameId, string userId)
 		{
 			var userList = await _userListRepository.GetByIdAsync(listId);
-			if (userList == null || userList.UserId != userId)
-				return false;
+			if (userList == null)
+				throw new NotFoundException("List", listId);
+			
+			if (userList.UserId != userId)
+				throw new ForbiddenException("remove games from", "list");
 
 			await _userListRepository.RemoveGameFromListAsync(listId, gameId);
-			return true;
 		}
 
 		public async Task<bool> IsGameInListAsync(Guid listId, Guid gameId)
@@ -199,18 +209,20 @@ namespace SavePoint.BusinessLogic.Services
 			return await _userListRepository.IsGameInListAsync(listId, gameId);
 		}
 
-		public async Task<bool> VoteOnListAsync(Guid listId, bool isUpvote, string userId)
+		public async Task VoteOnListAsync(Guid listId, bool isUpvote, string userId)
 		{
 			var userList = await _userListRepository.GetByIdAsync(listId);
-			if (userList == null || !userList.IsPublic)
-				return false;
+			if (userList == null)
+				throw new NotFoundException("List", listId);
+			
+			if (!userList.IsPublic)
+				throw new BusinessException("Cannot vote on private lists", "PRIVATE_LIST_VOTING", System.Net.HttpStatusCode.BadRequest);
 
 			// Users can't vote on their own lists
 			if (userList.UserId == userId)
-				return false;
+				throw new BusinessException("Cannot vote on your own lists", "SELF_VOTING", System.Net.HttpStatusCode.BadRequest);
 
 			await _userListRepository.AddOrUpdateVoteAsync(listId, userId, isUpvote);
-			return true;
 		}
 
 		public async Task<bool> RemoveVoteAsync(Guid listId, string userId)
@@ -281,20 +293,36 @@ namespace SavePoint.BusinessLogic.Services
 
 		public async Task<bool> AddGameToWantToPlayAsync(Guid gameId, string userId)
 		{
-			var wantToPlayList = await _userListRepository.GetUserDefaultListAsync(userId, "WantToPlay");
-			if (wantToPlayList == null)
-				return false;
+			try
+			{
+				var wantToPlayList = await _userListRepository.GetUserDefaultListAsync(userId, "WantToPlay");
+				if (wantToPlayList == null)
+					return false;
 
-			return await AddGameToListAsync(wantToPlayList.Id, gameId, userId);
+				await AddGameToListAsync(wantToPlayList.Id, gameId, userId);
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		public async Task<bool> AddGameToFinishedAsync(Guid gameId, string userId)
 		{
-			var finishedList = await _userListRepository.GetUserDefaultListAsync(userId, "Finished");
-			if (finishedList == null)
-				return false;
+			try
+			{
+				var finishedList = await _userListRepository.GetUserDefaultListAsync(userId, "Finished");
+				if (finishedList == null)
+					return false;
 
-			return await AddGameToListAsync(finishedList.Id, gameId, userId);
+				await AddGameToListAsync(finishedList.Id, gameId, userId);
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
 		}
 
 		public async Task<bool> MoveGameToFinished(Guid gameId, string userId)

@@ -1,6 +1,7 @@
 using AutoMapper;
 using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.Common.Dtos.Reviews;
+using SavePoint.Common.Exceptions;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Reviews;
 
@@ -25,10 +26,13 @@ namespace SavePoint.BusinessLogic.Services
             return _mapper.Map<IEnumerable<ReviewDto>>(reviews);
         }
 
-        public async Task<ReviewDto?> GetByIdAsync(Guid id)
+        public async Task<ReviewDto> GetByIdAsync(Guid id)
         {
             var review = await _reviewRepository.GetByIdAsync(id);
-            return review != null ? _mapper.Map<ReviewDto>(review) : null;
+            if (review == null)
+                throw new NotFoundException("Review", id);
+            
+            return _mapper.Map<ReviewDto>(review);
         }
 
         public async Task<IEnumerable<ReviewDto>> GetByGameIdAsync(Guid gameId)
@@ -54,12 +58,12 @@ namespace SavePoint.BusinessLogic.Services
             // Check if game exists
             var game = await _gameRepository.GetByIdWithDetailsAsync(createDto.GameId);
             if (game == null)
-                throw new ArgumentException("Game not found");
+                throw new NotFoundException("Game", createDto.GameId);
 
             // Check if user already has a review for this game
             var existingReview = await _reviewRepository.GetUserReviewForGameAsync(userId, createDto.GameId);
             if (existingReview != null)
-                throw new InvalidOperationException("User already has a review for this game");
+                throw ConflictException.DuplicateReview(createDto.GameId, userId);
 
             var review = new Review
             {
@@ -79,15 +83,15 @@ namespace SavePoint.BusinessLogic.Services
             return _mapper.Map<ReviewDto>(reviewWithIncludes);
         }
 
-        public async Task<ReviewDto?> UpdateAsync(Guid id, UpdateReviewDto updateDto, string userId)
+        public async Task<ReviewDto> UpdateAsync(Guid id, UpdateReviewDto updateDto, string userId)
         {
             var review = await _reviewRepository.GetByIdAsync(id);
             if (review == null)
-                return null;
+                throw new NotFoundException("Review", id);
 
             // Check if the review belongs to the user
             if (review.UserId != userId)
-                throw new UnauthorizedAccessException("You can only update your own reviews");
+                throw new ForbiddenException("update", "review");
 
             review.Rating = updateDto.Rating;
             review.Content = updateDto.Content;
@@ -100,17 +104,17 @@ namespace SavePoint.BusinessLogic.Services
             return _mapper.Map<ReviewDto>(reviewWithIncludes);
         }
 
-        public async Task<bool> DeleteAsync(Guid id, string userId)
+        public async Task DeleteAsync(Guid id, string userId)
         {
             var review = await _reviewRepository.GetByIdAsync(id);
             if (review == null)
-                return false;
+                throw new NotFoundException("Review", id);
 
             // Check if the review belongs to the user
             if (review.UserId != userId)
-                throw new UnauthorizedAccessException("You can only delete your own reviews");
+                throw new ForbiddenException("delete", "review");
 
-            return await _reviewRepository.DeleteAsync(id);
+            await _reviewRepository.DeleteAsync(id);
         }
 
         public async Task<bool> UserCanReviewGameAsync(string userId, Guid gameId)
