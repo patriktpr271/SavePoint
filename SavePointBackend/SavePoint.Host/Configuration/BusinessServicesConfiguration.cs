@@ -15,6 +15,7 @@ namespace SavePoint.Host.Configuration
             services.AddScoped<IGameService, GameService>();
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<IUserListService, UserListService>();
+            services.AddScoped<IReviewService, ReviewService>();
 
             return services;
         }

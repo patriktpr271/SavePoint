@@ -14,6 +14,7 @@ namespace SavePoint.Host.Configuration
             services.AddScoped<IPlatfromRepository, PlatfromRepository>();
             services.AddScoped<IPopularityRepository, PopularityRepository>();
             services.AddScoped<IUserListRepository, UserListRepository>();
+            services.AddScoped<IReviewRepository, ReviewRepository>();
 
             return services;
         }

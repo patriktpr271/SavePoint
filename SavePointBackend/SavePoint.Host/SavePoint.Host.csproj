@@ -30,23 +30,19 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
 
-  <!-- Include pre-built frontend files -->
-  <ItemGroup>
-    <Content Include="$(SpaRoot)dist\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot\" Condition="Exists('$(SpaRoot)dist')" />
-  </ItemGroup>
-
-  <!-- Build frontend locally before publish -->
-  <Target Name="BuildFrontendLocal" BeforeTargets="Publish" Condition="'$(PublishUrl)' != ''">
-    <Message Text="Building frontend locally before publish..." Importance="high" />
+  <!-- Build frontend before publish (only during deployment) -->
+  <Target Name="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish" Condition="'$(PublishProtocol)' != '' Or '$(WebPublishMethod)' != ''">
+    <Message Text="Building frontend for Azure deployment..." Importance="high" />
     
-    <!-- Build the frontend locally -->
-    <Exec Command="npm install" WorkingDirectory="$(SpaRoot)" />
+    <!-- Build the frontend for production deployment -->
+    <Exec Command="npm ci" WorkingDirectory="$(SpaRoot)" Condition="Exists('$(SpaRoot)package-lock.json')" />
+    <Exec Command="npm install" WorkingDirectory="$(SpaRoot)" Condition="!Exists('$(SpaRoot)package-lock.json')" />
     <Exec Command="npm run build" WorkingDirectory="$(SpaRoot)" />
   </Target>
 
-  <!-- Ensure frontend files are included in publish -->
-  <Target Name="IncludeFrontendInPublish" BeforeTargets="ComputeFilesToPublish">
-    <Message Text="Including frontend files in publish..." Importance="high" />
+  <!-- Include frontend files in publish (only during deployment) -->
+  <Target Name="IncludeFrontendInPublish" AfterTargets="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish" Condition="'$(PublishProtocol)' != '' Or '$(WebPublishMethod)' != ''">
+    <Message Text="Including frontend files in Azure deployment..." Importance="high" />
     
     <ItemGroup Condition="Exists('$(SpaRoot)dist')">
       <_FrontendFiles Include="$(SpaRoot)dist\**\*" />

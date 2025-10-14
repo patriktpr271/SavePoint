@@ -113,3 +113,33 @@ export interface UserProfileDto {
   listCount: number;
   publicListCount: number;
 }
+
+// Review related DTOs
+export interface ReviewDto {
+  id: string; // Guid from backend
+  userId: string;
+  gameId: string;
+  rating: number; // 1-5 integer
+  content?: string;
+  createdAt: string; // DateTime serialized as string
+  updatedAt: string; // DateTime serialized as string
+  userName?: string; // From navigation property
+  userDisplayName?: string; // From navigation property
+  gameName?: string; // From navigation property
+}
+
+export interface CreateReviewDto {
+  gameId: string;
+  rating: number; // 1-5 integer, required
+  content?: string; // Optional text content
+}
+
+export interface UpdateReviewDto {
+  rating: number; // 1-5 integer, required
+  content?: string; // Optional text content
+}
+
+export interface ReviewStatisticsDto {
+  totalReviews: number;
+  averageRating: number;
+}

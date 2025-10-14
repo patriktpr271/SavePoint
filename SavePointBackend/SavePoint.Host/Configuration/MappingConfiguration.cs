@@ -10,7 +10,8 @@ namespace SavePoint.Host.Configuration
             services.AddAutoMapper(
                 typeof(GameMappingProfile),
                 typeof(UserMappingProfile),
-                typeof(LookupMappingProfile));
+                typeof(LookupMappingProfile),
+                typeof(ReviewMappingProfile));
 
             return services;
         }

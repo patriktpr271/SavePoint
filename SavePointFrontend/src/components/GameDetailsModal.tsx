@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GameCardDto, GameDetailDto } from '../interfaces/types';
+import ReviewList from './ReviewList';
 
 interface GameDetailsModalProps {
   game: GameCardDto;
@@ -76,23 +77,24 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
             <button className="btn btn-primary" onClick={() => fetchGameDetails(game.id)}>Try Again</button>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Game Cover */}
-            <div className="flex-shrink-0">
-              <img
-                src={displayGame.coverUrl || '/placeholder-game.jpg'}
-                alt={displayGame.name}
-                className="w-full lg:w-80 h-auto rounded-lg shadow-lg object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/placeholder-game.jpg';
-                }}
-              />
-            </div>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Game Cover */}
+              <div className="flex-shrink-0">
+                <img
+                  src={displayGame.coverUrl || '/placeholder-game.jpg'}
+                  alt={displayGame.name}
+                  className="w-full lg:w-80 h-auto rounded-lg shadow-lg object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder-game.jpg';
+                  }}
+                />
+              </div>
 
-            {/* Game Details */}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-4">{displayGame.name}</h1>
+              {/* Game Details */}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold mb-4">{displayGame.name}</h1>
             
             {/* Rating and Release Date */}
             <div className="flex flex-wrap gap-4 mb-6">
@@ -127,7 +129,7 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
                 <div className="flex flex-wrap gap-2">
                   {displayGame.genres.map((genre) => (
                     <span 
-                      key={genre.id} 
+                      key={`genre-${genre.id}`} 
                       className="badge badge-primary badge-lg"
                     >
                       {genre.name}
@@ -144,7 +146,7 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
                 <div className="flex flex-wrap gap-2">
                   {displayGame.platforms.map((platform) => (
                     <span 
-                      key={platform.id} 
+                      key={`platform-${platform.id}`} 
                       className="badge badge-secondary badge-lg"
                     >
                       {platform.name}
@@ -159,8 +161,8 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
               <div className="mb-4">
                 <h3 className="text-lg font-semibold mb-2">Companies</h3>
                 <div className="space-y-2">
-                  {displayGame.companies.map((company) => (
-                    <div key={company.id} className="flex justify-between items-center bg-base-200 rounded-lg p-3">
+                  {displayGame.companies.map((company, index) => (
+                    <div key={`company-${company.id}-${company.role}-${index}`} className="flex justify-between items-center bg-base-200 rounded-lg p-3">
                       <span className="font-medium">{company.name}</span>
                       <span className="badge badge-outline">{company.role}</span>
                     </div>
@@ -168,8 +170,14 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
                 </div>
               </div>
             )}
+              </div>
+            </div>
+
+            {/* Reviews Section - positioned under the game details */}
+            <div className="mt-8">
+              <ReviewList key={`reviews-${game.id}`} gameId={game.id} gameName={displayGame.name} />
+            </div>
           </div>
-        </div>
         )}
 
         {/* Modal Actions */}
