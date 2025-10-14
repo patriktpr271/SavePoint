@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { ReviewDto, CreateReviewDto, UpdateReviewDto } from '../interfaces/types';
 import { reviewService } from '../services/reviewService';
+import { useFormSubmission } from '../hooks/useErrorHandling';
+import { useError } from '../contexts/ErrorContext';
+import { ErrorHandler, AppError } from '../services/errorHandler';
 
 interface ReviewFormProps {
   gameId: string;
@@ -17,14 +20,21 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 }) => {
   const [rating, setRating] = useState(existingReview?.rating || 5);
   const [content, setContent] = useState(existingReview?.content || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
+  
+  const { submitForm } = useFormSubmission();
+  const { isLoading } = useError();
   const isEdit = !!existingReview;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Clear previous errors
+    setError(null);
+    setValidationErrors(null);
+    
+    // Client-side validation
     if (!rating || rating < 1 || rating > 5) {
       setError('Please provide a rating between 1 and 5 stars');
       return;
@@ -35,31 +45,35 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
+    // Submit using enhanced error handling
+    await submitForm(async () => {
       if (isEdit && existingReview) {
         const updateData: UpdateReviewDto = {
           rating,
           content: content.trim() || undefined
         };
-        await reviewService.updateReview(existingReview.id, updateData);
+        return await reviewService.updateReview(existingReview.id, updateData);
       } else {
         const createData: CreateReviewDto = {
           gameId,
           rating,
           content: content.trim() || undefined
         };
-        await reviewService.createReview(createData);
+        return await reviewService.createReview(createData);
       }
-
-      onReviewSubmitted();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit review');
-    } finally {
-      setIsSubmitting(false);
-    }
+    }, {
+      onSuccess: () => {
+        onReviewSubmitted();
+      },
+      onValidationError: (errors) => {
+        setValidationErrors(errors);
+      },
+      onError: (error: AppError) => {
+        // For non-validation errors, show them locally
+        setError(ErrorHandler.getUserFriendlyMessage(error));
+      },
+      context: isEdit ? 'Update Review' : 'Create Review'
+    });
   };
 
   const renderStarRating = () => {
@@ -126,7 +140,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             )}
           </div>
 
-          {/* Error Message */}
+          {/* Error Messages */}
           {error && (
             <div className="alert alert-error">
               <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -136,22 +150,43 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             </div>
           )}
 
+          {/* Validation Errors */}
+          {validationErrors && (
+            <div className="alert alert-warning">
+              <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div>
+                <div className="font-bold">Validation Errors:</div>
+                <ul className="text-sm mt-1 space-y-1">
+                  {Object.entries(validationErrors).map(([field, errors]) =>
+                    errors.map((err, idx) => (
+                      <li key={`${field}-${idx}`}>
+                        <span className="font-medium">{field}:</span> {err}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* Form Actions */}
           <div className="card-actions justify-end gap-2">
             <button
               type="button"
               className="btn btn-ghost"
               onClick={onCancel}
-              disabled={isSubmitting}
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className={`btn btn-primary ${isSubmitting ? 'loading' : ''}`}
-              disabled={isSubmitting}
+              className={`btn btn-primary ${isLoading ? 'loading' : ''}`}
+              disabled={isLoading}
             >
-              {isSubmitting 
+              {isLoading 
                 ? (isEdit ? 'Updating...' : 'Submitting...') 
                 : (isEdit ? 'Update Review' : 'Submit Review')
               }

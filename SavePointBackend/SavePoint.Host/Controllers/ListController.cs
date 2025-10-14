@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.Common.Dtos.Lists;
+using SavePoint.Common.Exceptions;
 using SavePoint.Entities.Users;
 
 namespace SavePoint.Host.Controllers
@@ -20,7 +21,19 @@ namespace SavePoint.Host.Controllers
 			_userManager = userManager;
 		}
 
-		private async Task<string?> GetCurrentUserIdAsync()
+		private async Task<string> GetCurrentUserIdAsync()
+		{
+			if (User.Identity?.IsAuthenticated != true)
+				throw new UnauthorizedException();
+
+			var user = await _userManager.GetUserAsync(User);
+			if (user == null)
+				throw new UnauthorizedException();
+
+			return user.Id;
+		}
+
+		private async Task<string?> GetCurrentUserIdOrNullAsync()
 		{
 			if (User.Identity?.IsAuthenticated == true)
 			{
@@ -39,7 +52,7 @@ namespace SavePoint.Host.Controllers
 			[FromQuery] string? search = null,
 			[FromQuery] string? sortBy = null)
 		{
-			var currentUserId = await GetCurrentUserIdAsync();
+			var currentUserId = await GetCurrentUserIdOrNullAsync();
 			var result = await _userListService.GetPublicListsAsync(pageNumber, pageSize, search, sortBy, currentUserId);
 			return Ok(result);
 		}
@@ -47,16 +60,11 @@ namespace SavePoint.Host.Controllers
 		[HttpGet("{id:guid}")]
 		public async Task<IActionResult> GetList(Guid id, [FromQuery] bool includeGames = false)
 		{
-			var currentUserId = await GetCurrentUserIdAsync();
+			var currentUserId = await GetCurrentUserIdOrNullAsync();
 			
 			var list = includeGames 
 				? await _userListService.GetListWithGamesAsync(id, currentUserId)
 				: await _userListService.GetListByIdAsync(id, currentUserId);
-
-			if (list == null)
-			{
-				return NotFound(new { message = "List not found or access denied" });
-			}
 
 			return Ok(list);
 		}
@@ -68,7 +76,7 @@ namespace SavePoint.Host.Controllers
 		[HttpGet("user/{userId}")]
 		public async Task<IActionResult> GetUserLists(string userId)
 		{
-			var currentUserId = await GetCurrentUserIdAsync();
+			var currentUserId = await GetCurrentUserIdOrNullAsync();
 			var lists = await _userListService.GetUserListsAsync(userId, currentUserId);
 			return Ok(lists);
 		}
@@ -78,9 +86,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> GetMyLists()
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var lists = await _userListService.GetUserListsAsync(currentUserId, currentUserId);
 			return Ok(lists);
 		}
@@ -89,13 +94,7 @@ namespace SavePoint.Host.Controllers
 		[Authorize]
 		public async Task<IActionResult> CreateList([FromBody] CreateUserListDto dto)
 		{
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var createdList = await _userListService.CreateListAsync(dto, currentUserId);
 			return CreatedAtAction(nameof(GetList), new { id = createdList.Id }, createdList);
 		}
@@ -104,19 +103,8 @@ namespace SavePoint.Host.Controllers
 		[Authorize]
 		public async Task<IActionResult> UpdateList(Guid id, [FromBody] UpdateUserListDto dto)
 		{
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var updatedList = await _userListService.UpdateListAsync(id, dto, currentUserId);
-			if (updatedList == null)
-			{
-				return NotFound(new { message = "List not found or access denied" });
-			}
-
 			return Ok(updatedList);
 		}
 
@@ -125,15 +113,7 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> DeleteList(Guid id)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			var success = await _userListService.DeleteListAsync(id, currentUserId);
-			if (!success)
-			{
-				return NotFound(new { message = "List not found, access denied, or cannot delete default list" });
-			}
-
+			await _userListService.DeleteListAsync(id, currentUserId);
 			return NoContent();
 		}
 
@@ -145,19 +125,8 @@ namespace SavePoint.Host.Controllers
 		[Authorize]
 		public async Task<IActionResult> AddGameToList(Guid id, [FromBody] AddGameToListDto dto)
 		{
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			var success = await _userListService.AddGameToListAsync(id, dto.GameId, currentUserId);
-			if (!success)
-			{
-				return BadRequest(new { message = "Failed to add game. List not found, access denied, game not found, or game already in list." });
-			}
-
+			await _userListService.AddGameToListAsync(id, dto.GameId, currentUserId);
 			return Ok(new { message = "Game added to list successfully" });
 		}
 
@@ -166,15 +135,7 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> RemoveGameFromList(Guid id, Guid gameId)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			var success = await _userListService.RemoveGameFromListAsync(id, gameId, currentUserId);
-			if (!success)
-			{
-				return NotFound(new { message = "List not found or access denied" });
-			}
-
+			await _userListService.RemoveGameFromListAsync(id, gameId, currentUserId);
 			return Ok(new { message = "Game removed from list successfully" });
 		}
 
@@ -193,19 +154,8 @@ namespace SavePoint.Host.Controllers
 		[Authorize]
 		public async Task<IActionResult> VoteOnList(Guid id, [FromBody] VoteOnListDto dto)
 		{
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			var success = await _userListService.VoteOnListAsync(id, dto.IsUpvote, currentUserId);
-			if (!success)
-			{
-				return BadRequest(new { message = "Failed to vote. List not found, not public, or you cannot vote on your own list." });
-			}
-
+			await _userListService.VoteOnListAsync(id, dto.IsUpvote, currentUserId);
 			return Ok(new { message = "Vote recorded successfully" });
 		}
 
@@ -214,9 +164,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> RemoveVote(Guid id)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var success = await _userListService.RemoveVoteAsync(id, currentUserId);
 			if (!success)
 			{
@@ -235,9 +182,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> GetMyDefaultList(string defaultListType)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var list = await _userListService.GetUserDefaultListAsync(currentUserId, defaultListType, currentUserId);
 			if (list == null)
 			{
@@ -252,9 +196,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> AddToWantToPlay(Guid gameId)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var success = await _userListService.AddGameToWantToPlayAsync(gameId, currentUserId);
 			if (!success)
 			{
@@ -269,9 +210,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> AddToFinished(Guid gameId)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var success = await _userListService.AddGameToFinishedAsync(gameId, currentUserId);
 			if (!success)
 			{
@@ -286,9 +224,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> MoveToFinished(Guid gameId)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
 			var success = await _userListService.MoveGameToFinished(gameId, currentUserId);
 			if (!success)
 			{

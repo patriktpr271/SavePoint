@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.Common.Dtos.Reviews;
+using SavePoint.Common.Exceptions;
 using SavePoint.Entities.Users;
 
 namespace SavePoint.Host.Controllers
@@ -20,14 +21,16 @@ namespace SavePoint.Host.Controllers
 			_userManager = userManager;
 		}
 
-		private async Task<string?> GetCurrentUserIdAsync()
+		private async Task<string> GetCurrentUserIdAsync()
 		{
-			if (User.Identity?.IsAuthenticated == true)
-			{
-				var user = await _userManager.GetUserAsync(User);
-				return user?.Id;
-			}
-			return null;
+			if (User.Identity?.IsAuthenticated != true)
+				throw new UnauthorizedException();
+
+			var user = await _userManager.GetUserAsync(User);
+			if (user == null)
+				throw new UnauthorizedException();
+
+			return user.Id;
 		}
 
 		#region Public Review Endpoints
@@ -70,11 +73,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> GetReview(Guid id)
 		{
 			var review = await _reviewService.GetByIdAsync(id);
-			if (review == null)
-			{
-				return NotFound(new { message = "Review not found" });
-			}
-
 			return Ok(review);
 		}
 
@@ -108,8 +106,6 @@ namespace SavePoint.Host.Controllers
 			[FromQuery] int pageSize = 20)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
 
 			if (pageNumber < 1) pageNumber = 1;
 			if (pageSize < 1 || pageSize > 50) pageSize = 20;
@@ -129,8 +125,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> GetMyReviewForGame(Guid gameId)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
 
 			var review = await _reviewService.GetUserReviewForGameAsync(currentUserId, gameId);
 			if (review == null)
@@ -145,49 +139,18 @@ namespace SavePoint.Host.Controllers
 		[Authorize]
 		public async Task<IActionResult> CreateReview([FromBody] CreateReviewDto dto)
 		{
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			try
-			{
-				var createdReview = await _reviewService.CreateAsync(dto, currentUserId);
-				return CreatedAtAction(nameof(GetReview), new { id = createdReview.Id }, createdReview);
-			}
-			catch (InvalidOperationException ex)
-			{
-				return BadRequest(new { message = ex.Message });
-			}
+			var createdReview = await _reviewService.CreateAsync(dto, currentUserId);
+			return CreatedAtAction(nameof(GetReview), new { id = createdReview.Id }, createdReview);
 		}
 
 		[HttpPut("{id:guid}")]
 		[Authorize]
 		public async Task<IActionResult> UpdateReview(Guid id, [FromBody] UpdateReviewDto dto)
 		{
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			try
-			{
-				var updatedReview = await _reviewService.UpdateAsync(id, dto, currentUserId);
-				if (updatedReview == null)
-				{
-					return NotFound(new { message = "Review not found or access denied" });
-				}
-
-				return Ok(updatedReview);
-			}
-			catch (InvalidOperationException ex)
-			{
-				return BadRequest(new { message = ex.Message });
-			}
+			var updatedReview = await _reviewService.UpdateAsync(id, dto, currentUserId);
+			return Ok(updatedReview);
 		}
 
 		[HttpDelete("{id:guid}")]
@@ -195,15 +158,7 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> DeleteReview(Guid id)
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
-
-			var success = await _reviewService.DeleteAsync(id, currentUserId);
-			if (!success)
-			{
-				return NotFound(new { message = "Review not found or access denied" });
-			}
-
+			await _reviewService.DeleteAsync(id, currentUserId);
 			return NoContent();
 		}
 
@@ -225,8 +180,6 @@ namespace SavePoint.Host.Controllers
 		public async Task<IActionResult> GetMyReviewStatistics()
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
-			if (currentUserId == null)
-				return Unauthorized();
 
 			var reviews = await _reviewService.GetByUserIdAsync(currentUserId);
 			var count = reviews.Count();

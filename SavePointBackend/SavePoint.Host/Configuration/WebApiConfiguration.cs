@@ -1,4 +1,7 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc;
+using SavePoint.Host.Middleware;
+using SavePoint.Host.Filters;
 
 namespace SavePoint.Host.Configuration
 {
@@ -6,13 +9,23 @@ namespace SavePoint.Host.Configuration
     {
         public static IServiceCollection AddWebApiServices(this IServiceCollection services)
         {
-            // Add controllers with JSON configuration
-            services.AddControllers()
-                .AddJsonOptions(options =>
-                {
-                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-                    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-                });
+            // Add controllers with JSON configuration and filters
+            services.AddControllers(options =>
+            {
+                // Add global model validation filter
+                options.Filters.Add<ModelValidationFilter>();
+            })
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            });
+
+            // Disable automatic model validation since we handle it in the filter
+            services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.SuppressModelStateInvalidFilter = true;
+            });
 
             // Add API documentation
             services.AddEndpointsApiExplorer();
@@ -23,6 +36,9 @@ namespace SavePoint.Host.Configuration
 
         public static WebApplication ConfigureWebApiPipeline(this WebApplication app)
         {
+            // Global exception handling (should be one of the first middleware)
+            app.UseGlobalExceptionHandling();
+
             // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {

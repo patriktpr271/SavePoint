@@ -1,5 +1,7 @@
 import { ReviewDto, CreateReviewDto, UpdateReviewDto, ReviewStatisticsDto, PagedResult } from '../interfaces/types';
 
+import { ErrorHandler } from './errorHandler';
+
 const API_BASE_URL = '/api';
 
 export const reviewService = {
@@ -18,13 +20,7 @@ export const reviewService = {
 
     const url = `${API_BASE_URL}/review/game/${gameId}?${params}`;
 
-    const response = await fetch(url, {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch reviews: ${response.status} ${response.statusText}`);
-    }
+    const response = await ErrorHandler.fetchWithErrorHandling(url);
 
     const result = await response.json();
     
@@ -37,16 +33,9 @@ export const reviewService = {
 
   // Get average rating for a game
   async getGameAverageRating(gameId: string): Promise<{ gameId: string; averageRating: number }> {
-    const response = await fetch(
-      `${API_BASE_URL}/review/game/${gameId}/average`,
-      {
-        credentials: 'include',
-      }
+    const response = await ErrorHandler.fetchWithErrorHandling(
+      `${API_BASE_URL}/review/game/${gameId}/average`
     );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch average rating');
-    }
 
     return response.json();
   },
