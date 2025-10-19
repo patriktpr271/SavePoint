@@ -21,21 +21,18 @@ public class NoOpEmailSender : IEmailSender<SavePoint.Entities.Users.Application
 {
     public Task SendConfirmationLinkAsync(SavePoint.Entities.Users.ApplicationUser user, string email, string confirmationLink)
     {
-        // In a real application, you would send an email here
         Console.WriteLine($"Confirmation link for {email}: {confirmationLink}");
         return Task.CompletedTask;
     }
 
     public Task SendPasswordResetLinkAsync(SavePoint.Entities.Users.ApplicationUser user, string email, string resetLink)
     {
-        // In a real application, you would send an email here
         Console.WriteLine($"Password reset link for {email}: {resetLink}");
         return Task.CompletedTask;
     }
 
     public Task SendPasswordResetCodeAsync(SavePoint.Entities.Users.ApplicationUser user, string email, string resetCode)
     {
-        // In a real application, you would send an email here
         Console.WriteLine($"Password reset code for {email}: {resetCode}");
         return Task.CompletedTask;
     }

@@ -37,6 +37,9 @@ namespace SavePoint.Host.Configuration
             // External services (IGDB, etc.)
             services.AddExternalServices(configuration);
 
+            // Hangfire background job processing
+            services.AddHangfireServices(configuration);
+
             return services;
         }
     }

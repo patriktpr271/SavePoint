@@ -16,6 +16,7 @@ namespace SavePoint.Host.Configuration
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<IUserListService, UserListService>();
             services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 
             return services;
         }
