@@ -1,6 +1,5 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import WeatherPage from './pages/weatherpage';
 import VideogamesPage from './pages/VideogamesPage';
 import UserProfilePage from './pages/UserProfilePage';
 import UserListsPage from './pages/UserListsPage';
