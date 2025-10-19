@@ -28,5 +28,8 @@ namespace SavePoint.DAL.Repositories.Interfaces
 			Guid[]? companyIds = null, // Changed to Guid array for IDs
 			Guid[]? genreIds = null); // Changed to Guid array for IDs
 		Task<PagedResult<Game>> GetPopularGames(int popularityType, int pageNumber = 1, int pageSize = 20);
+		
+		// Add batch method for checking existing games
+		Task<HashSet<long>> GetExistingExternalIdsAsync(IEnumerable<long> externalIds);
 	}
 }

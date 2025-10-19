@@ -17,9 +17,15 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-         target: 'http://localhost:5044',
+        target: 'http://localhost:5044',
         changeOrigin: true,
         secure: false,
+      },
+      '/hangfire': {
+        target: 'http://localhost:5044',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       }
     }
   },

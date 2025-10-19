@@ -1,4 +1,4 @@
-﻿using IGDB;
+using IGDB;
 using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Games;
@@ -16,6 +16,10 @@ namespace SavePoint.BusinessLogic.Services
 		private readonly IPlatfromRepository _platformRepository;
 		private readonly IPopularityRepository _popularityRepository;
 
+		private const int BATCH_SIZE = 250;
+		private const int DELAY_BETWEEN_BATCHES_MS = 100;
+		private static readonly int[] POPULARITY_TYPES = new int[] { 1, 2, 5 };
+
 		public IGDBImportService(IGDBClient client, IGenreRepository genreRepository, IGameRepository gameRepository, 
 			ICompanyRepository companyRepository, IPlatfromRepository platfromRepository, IPopularityRepository popularityRepository)
 		{
@@ -27,248 +31,262 @@ namespace SavePoint.BusinessLogic.Services
 			_popularityRepository = popularityRepository;
 		}
 
-		/*public async Task ImportGamesAsync()
-		{			
-			var genreList = await _genreRepository.GetAllAsync();
-			var platformList = await _platformRepository.GetAllAsync();
-			var companyList = await _companyRepository.GetAllAsync();
-
-			var games = await _client.QueryAsync<IGDB.Models.Game>(
-				 IGDBClient.Endpoints.Games,
-				 "fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; limit 500; offset 1000;"
-				);
-			foreach (var game in games)
-			{
-				if (game != null)
-				{
-					var coverUrl = game.Cover?.Value?.Url;
-					var genresExternalIds = game.Genres?.Ids;
-					var platformsExternalIds = game.Platforms?.Ids;
-
-					// Map IGDB genre IDs to internal GUIDs
-					List<GameGenre> gameGenres = new();
-					if (genresExternalIds != null && genresExternalIds.Any())
-					{
-						var internalGenres = genreList.Where(g => genresExternalIds.Contains((long)g.ExternalId)).ToList();
-						foreach (var genre in internalGenres)
-						{
-							gameGenres.Add(new GameGenre
-							{
-								GenreId = genre.Id,
-								Id = Guid.NewGuid()
-							});
-						}
-					}
-
-					//Map IGDB platform IDs to internal GUIDs
-					List<GamePlatform> gamePlatforms = new();
-					if (platformsExternalIds != null && platformsExternalIds.Any())
-					{
-						var internalPlatforms = platformList.Where(p => platformsExternalIds.Contains((long)p.ExternalId)).ToList();
-						foreach (var platform in internalPlatforms)
-						{
-							gamePlatforms.Add(new GamePlatform
-							{
-								PlatformId = platform.Id,
-								Id = Guid.NewGuid()
-							});
-						}
-					}
-
-					// Map IGDB company relationships
-					List<GameCompany> gameCompanies = new();
-					if (game.InvolvedCompanies != null)
-					{
-						foreach (var involvedCompany in game.InvolvedCompanies.Values)
-						{
-							var company = companyList.FirstOrDefault(c => c.ExternalId == involvedCompany.Company.Id);
-							if (company != null)
-							{
-								// Add as developer if flagged as developer
-								if (involvedCompany.Developer == true)
-								{
-									gameCompanies.Add(new GameCompany
-									{
-										Id = Guid.NewGuid(),
-										CompanyId = company.Id,
-										Role = CompanyRole.Developer
-									});
-								}
-
-								// Add as publisher if flagged publisher
-								if (involvedCompany.Publisher == true)
-								{
-									gameCompanies.Add(new GameCompany
-									{
-										Id = Guid.NewGuid(),
-										CompanyId = company.Id,
-										Role = CompanyRole.Publisher
-									});
-								}
-							}
-						}
-					}
-
-					//create game entity
-					var gameEntity = new Game
-					{
-						Id = Guid.NewGuid(),
-						ExternalId = game.Id,
-						Name = game.Name,
-						Summary = game.Summary,
-						CoverUrl = coverUrl,
-						ReleaseDate = game.FirstReleaseDate?.UtcDateTime ?? DateTime.MinValue,
-						CreatedAt = DateTime.UtcNow,
-						UpdatedAt = DateTime.UtcNow,
-						GameGenres = gameGenres,
-						GamePlatforms = gamePlatforms,
-						GameCompanies = gameCompanies
-					};
-
-					// Set the GameId for all related entities
-					gameGenres.ForEach(gg => gg.GameId = gameEntity.Id);
-					gamePlatforms.ForEach(gp => gp.GameId = gameEntity.Id);
-					gameCompanies.ForEach(gc => gc.GameId = gameEntity.Id);
-
-					await _gameRepository.InsertOrUpdateAsync(gameEntity);
-				}
-			}			
-			
-		}*/
-
-		public async Task ImportGamesAsync()
+		/// <summary>
+		/// Incremental import for all games with popularity data
+		/// Checks existing games by update date, adds new games, and populates popularity
+		/// </summary>
+		public async Task ImportGamesIncrementalWithPopularityAsync(DateTime? lastUpdateDate = null)
 		{
+			var updateDate = lastUpdateDate ?? DateTime.UtcNow.AddDays(-7);
+			var unixTimestamp = ((DateTimeOffset)updateDate).ToUnixTimeSeconds();
+
+			Console.WriteLine($"Starting incremental games import with popularity for games updated after {updateDate}");
+
+			// Load reference data once
 			var genreList = await _genreRepository.GetAllAsync();
 			var platformList = await _platformRepository.GetAllAsync();
 			var companyList = await _companyRepository.GetAllAsync();
 
-			int limit = 500;
 			int offset = 0;
-			bool hasMore = true;
+			int totalGamesProcessed = 0;
+			int newGamesAdded = 0;
+			int existingGamesUpdated = 0;
 
+			while (true)
+			{
+				Console.WriteLine($"Processing batch starting at offset {offset}...");
 
+				// Get games updated after the specified date
 				var games = await _client.QueryAsync<IGDB.Models.Game>(
 					 IGDBClient.Endpoints.Games,
-					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; limit {limit}; offset {offset};"
-					);
+					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher,updated_at; " +
+					 $"where updated_at >= {unixTimestamp}; " +
+					 $"sort updated_at asc; " +
+					 $"limit {BATCH_SIZE}; offset {offset};"
+				);
 
 				if (games.Count() == 0)
 				{
-					hasMore = false;
+					Console.WriteLine("No more games to process");
+					break;
 				}
 
+				// Extract external IDs from the batch
+				var batchExternalIds = games
+					.Where(g => g?.Id.HasValue == true)
+					.Select(g => g.Id.Value)
+					.ToList();
+
+				// Batch check for existing games - SINGLE DATABASE CALL instead of multiple!
+				var existingExternalIds = await _gameRepository.GetExistingExternalIdsAsync(batchExternalIds);
+
+				Console.WriteLine($"Found {existingExternalIds.Count} existing games out of {batchExternalIds.Count} in this batch");
+
+				// Process games and collect their IDs for batch popularity import
+				var gameEntities = new List<(Game entity, long externalId)>();
+				
 				foreach (var game in games)
 				{
-					if (game != null)
+					if (game != null && game.Id.HasValue)
 					{
-						var coverUrl = game.Cover?.Value?.Url;
-						var genresExternalIds = game.Genres?.Ids;
-						var platformsExternalIds = game.Platforms?.Ids;
-
-						// Map IGDB genre IDs to internal GUIDs
-						List<GameGenre> gameGenres = new();
-						if (genresExternalIds != null && genresExternalIds.Any())
+						try
 						{
-							var internalGenres = genreList.Where(g => genresExternalIds.Contains((long)g.ExternalId)).ToList();
-							foreach (var genre in internalGenres)
+							// Check if game already exists using the batch result
+							bool isNewGame = !existingExternalIds.Contains(game.Id.Value);
+
+							// Create or update game entity
+							var gameEntity = await CreateGameEntity(game, genreList, platformList, companyList);
+							await _gameRepository.InsertOrUpdateAsync(gameEntity);
+
+							// Store for batch popularity import
+							gameEntities.Add((gameEntity, game.Id.Value));
+
+							if (isNewGame)
 							{
-								gameGenres.Add(new GameGenre
-								{
-									GenreId = genre.Id,
-									Id = Guid.NewGuid()
-								});
+								newGamesAdded++;
+								Console.WriteLine($"Added new game: {game.Name}");
 							}
-						}
-
-						//Map IGDB platform IDs to internal GUIDs
-						List<GamePlatform> gamePlatforms = new();
-						if (platformsExternalIds != null && platformsExternalIds.Any())
-						{
-							var internalPlatforms = platformList.Where(p => platformsExternalIds.Contains((long)p.ExternalId)).ToList();
-							foreach (var platform in internalPlatforms)
+							else
 							{
-								gamePlatforms.Add(new GamePlatform
-								{
-									PlatformId = platform.Id,
-									Id = Guid.NewGuid()
-								});
+								existingGamesUpdated++;
+								Console.WriteLine($"Updated existing game: {game.Name}");
 							}
+
+							totalGamesProcessed++;
 						}
-
-						// Map IGDB company relationships
-						List<GameCompany> gameCompanies = new();
-						if (game.InvolvedCompanies != null)
+						catch (Exception ex)
 						{
-							foreach (var involvedCompany in game.InvolvedCompanies.Values)
-							{
-								var company = companyList.FirstOrDefault(c => c.ExternalId == involvedCompany.Company.Id);
-								if (company != null)
-								{
-									// Add as developer if flagged as developer
-									if (involvedCompany.Developer == true)
-									{
-										gameCompanies.Add(new GameCompany
-										{
-											Id = Guid.NewGuid(),
-											CompanyId = company.Id,
-											Role = CompanyRole.Developer
-										});
-									}
-
-									// Add as publisher if flagged publisher
-									if (involvedCompany.Publisher == true)
-									{
-										gameCompanies.Add(new GameCompany
-										{
-											Id = Guid.NewGuid(),
-											CompanyId = company.Id,
-											Role = CompanyRole.Publisher
-										});
-									}
-								}
-							}
+							Console.WriteLine($"Error processing game {game.Name}: {ex.Message}");
 						}
-
-						//create game entity
-						var gameEntity = new Game
-						{
-							Id = Guid.NewGuid(),
-							ExternalId = game.Id,
-							Name = game.Name,
-							Summary = game.Summary,
-							CoverUrl = coverUrl,
-							ReleaseDate = game.FirstReleaseDate?.UtcDateTime ?? DateTime.MinValue,
-							CreatedAt = DateTime.UtcNow,
-							UpdatedAt = DateTime.UtcNow,
-							GameGenres = gameGenres,
-							GamePlatforms = gamePlatforms,
-							GameCompanies = gameCompanies
-						};
-
-						// Set the GameId for all related entities
-						gameGenres.ForEach(gg => gg.GameId = gameEntity.Id);
-						gamePlatforms.ForEach(gp => gp.GameId = gameEntity.Id);
-						gameCompanies.ForEach(gc => gc.GameId = gameEntity.Id);
-
-						await _gameRepository.InsertOrUpdateAsync(gameEntity);
 					}
 				}
 
-				offset += limit;
-			
+				// Batch import popularity for all games in this batch
+				if (gameEntities.Any())
+				{
+					await ImportPopularityForGamesBatch(gameEntities);
+				}
+
+				Console.WriteLine($"Processed batch of {games.Count()} games. Total: {totalGamesProcessed} (New: {newGamesAdded}, Updated: {existingGamesUpdated})");
+				
+				offset += BATCH_SIZE;
+				await Task.Delay(DELAY_BETWEEN_BATCHES_MS);
+			}
+
+			Console.WriteLine($"Incremental games import completed! Total processed: {totalGamesProcessed}, New: {newGamesAdded}, Updated: {existingGamesUpdated}");
 		}
 
-		public async Task ImportGenresAsync()
+		/// <summary>
+		/// Incremental import for base data (genres, companies, platforms)
+		/// Checks existing data by update date and adds new items
+		/// </summary>
+		public async Task ImportBaseDataIncrementalAsync(DateTime? lastUpdateDate = null)
 		{
-			int limit = 500;
+			var updateDate = lastUpdateDate ?? DateTime.UtcNow.AddDays(-7);
+			var unixTimestamp = ((DateTimeOffset)updateDate).ToUnixTimeSeconds();
+
+			Console.WriteLine($"Starting incremental base data import for data updated after {updateDate}");
+
+			// Import genres incrementally
+			await ImportGenresIncrementalAsync(unixTimestamp);
+			
+			// Import companies incrementally
+			await ImportCompaniesIncrementalAsync(unixTimestamp);
+			
+			// Import platforms incrementally
+			await ImportPlatformsIncrementalAsync(unixTimestamp);
+
+			Console.WriteLine("Incremental base data import completed");
+		}
+
+		/// <summary>
+		/// One-time full database sync - imports all games that don't exist in database
+		/// Does not use date filtering, only checks by external game ID
+		/// </summary>
+		public async Task ImportAllGamesFullSyncAsync()
+		{
+			Console.WriteLine("Starting full database sync - importing all games not in database");
+
+			// Load reference data once
+			var genreList = await _genreRepository.GetAllAsync();
+			var platformList = await _platformRepository.GetAllAsync();
+			var companyList = await _companyRepository.GetAllAsync();
+
+			// Get all existing external game IDs from database once at the start
+			var existingGames = await _gameRepository.GetAllAsync();
+			var existingExternalIds = existingGames
+				.Where(g => g.ExternalId.HasValue)
+				.Select(g => g.ExternalId.Value)
+				.ToHashSet();
+
+			Console.WriteLine($"Found {existingExternalIds.Count} existing games in database");
+
 			int offset = 0;
+			int totalGamesProcessed = 0;
+			int newGamesAdded = 0;
+			int skippedExistingGames = 0;
+
+			while (true)
+			{
+				Console.WriteLine($"Processing batch starting at offset {offset}...");
+
+				// Get all games (no date filter)
+				var games = await _client.QueryAsync<IGDB.Models.Game>(
+					 IGDBClient.Endpoints.Games,
+					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; " +
+					 $"sort id asc; " +
+					 $"limit {BATCH_SIZE}; offset {offset};"
+				);
+
+				if (games.Count() == 0)
+				{
+					Console.WriteLine("No more games to process");
+					break;
+				}
+
+				// Extract external IDs from the batch for additional verification
+				var batchExternalIds = games
+					.Where(g => g?.Id.HasValue == true)
+					.Select(g => g.Id.Value)
+					.ToList();
+
+				// Batch check for any new games that might have been added since start
+				// This is optional but helps with concurrent imports
+				var currentExistingIds = await _gameRepository.GetExistingExternalIdsAsync(batchExternalIds);
+				
+				// Merge with our initial set
+				foreach (var id in currentExistingIds)
+				{
+					existingExternalIds.Add(id);
+				}
+
+				// Process games and collect new ones for batch popularity import
+				var newGameEntities = new List<(Game entity, long externalId)>();
+				
+				foreach (var game in games)
+				{
+					if (game != null && game.Id.HasValue)
+					{
+						try
+						{
+							// Check if game already exists by external ID
+							if (existingExternalIds.Contains(game.Id.Value))
+							{
+								skippedExistingGames++;
+								continue; // Skip if already exists
+							}
+
+							// Create new game entity
+							var gameEntity = await CreateGameEntity(game, genreList, platformList, companyList);
+							await _gameRepository.InsertOrUpdateAsync(gameEntity);
+
+							// Store for batch popularity import
+							newGameEntities.Add((gameEntity, game.Id.Value));
+
+							// Add to existing set to avoid duplicates in same run
+							existingExternalIds.Add(game.Id.Value);
+
+							newGamesAdded++;
+							Console.WriteLine($"Added new game: {game.Name}");
+							totalGamesProcessed++;
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine($"Error processing game {game.Name}: {ex.Message}");
+						}
+					}
+				}
+
+				// Batch import popularity for all new games in this batch
+				if (newGameEntities.Any())
+				{
+					await ImportPopularityForGamesBatch(newGameEntities);
+				}
+
+				Console.WriteLine($"Processed batch of {games.Count()} games. New: {newGamesAdded}, Skipped: {skippedExistingGames}, Total processed: {totalGamesProcessed}");
+				
+				offset += BATCH_SIZE;
+				await Task.Delay(DELAY_BETWEEN_BATCHES_MS);
+			}
+
+			Console.WriteLine($"Full database sync completed! New games added: {newGamesAdded}, Total processed: {totalGamesProcessed}, Skipped existing: {skippedExistingGames}");
+		}
+
+		// Helper methods
+
+		private async Task ImportGenresIncrementalAsync(long unixTimestamp)
+		{
+			Console.WriteLine("Starting incremental genres import...");
+
+			int offset = 0;
+			int totalProcessed = 0;
 			bool hasMore = true;
 
 			while (hasMore)
 			{
 				var response = await _client.QueryAsync<IGDB.Models.Genre>(
 					IGDBClient.Endpoints.Genres,
-					$"fields id,name; limit {limit}; offset {offset};"
+					$"fields id,name,updated_at; where updated_at >= {unixTimestamp}; limit {BATCH_SIZE}; offset {offset};"
 				);
 
 				if (response.Count() == 0)
@@ -279,43 +297,54 @@ namespace SavePoint.BusinessLogic.Services
 
 				foreach (var g in response)
 				{
-					var genre = new Genre
+					try
 					{
-						Id = Guid.NewGuid(),
-						ExternalId = g.Id,
-						Name = g.Name,
-						CreatedAt = DateTime.UtcNow,
-						UpdatedAt = DateTime.UtcNow
-					};
-
-					await _genreRepository.InsertOrUpdateAsync(genre);
+						var genre = new Genre
+						{
+							Id = Guid.NewGuid(),
+							ExternalId = g.Id,
+							Name = g.Name,
+							CreatedAt = DateTime.UtcNow,
+							UpdatedAt = DateTime.UtcNow
+						};
+						await _genreRepository.InsertOrUpdateAsync(genre);
+						totalProcessed++;
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine($"Error processing genre {g.Name}: {ex.Message}");
+					}
 				}
 
-				offset += limit;
+				Console.WriteLine($"Processed {response.Count()} genres");
+				offset += BATCH_SIZE;
+				await Task.Delay(DELAY_BETWEEN_BATCHES_MS);
 			}
+
+			Console.WriteLine($"Incremental genres import completed. Total processed: {totalProcessed}");
 		}
 
-		public async Task ImportCompaniesAsync()
+		private async Task ImportCompaniesIncrementalAsync(long unixTimestamp)
 		{
-			int limit = 500;
+			Console.WriteLine("Starting incremental companies import...");
+
 			int offset = 0;
 			bool hasMore = true;
-			var companyList = new List<Company>();
+			var companyBatch = new List<Company>();
 
 			while (hasMore)
 			{
 				var result = await _client.QueryAsync<IGDB.Models.Company>(
 					IGDBClient.Endpoints.Companies,
-					$"fields id,name,description,logo.*; limit {limit}; offset {offset};"
+					$"fields id,name,description,logo.*,updated_at; where updated_at >= {unixTimestamp}; limit {BATCH_SIZE}; offset {offset};"
 				);
-
-				offset += limit;
 
 				if (result.Count() == 0)
 				{
 					hasMore = false;
 					break;
 				}
+
 				foreach (var c in result)
 				{
 					var company = new Company
@@ -324,28 +353,38 @@ namespace SavePoint.BusinessLogic.Services
 						ExternalId = c.Id,
 						Name = c.Name,
 					};
-
-					companyList.Add(company);
+					companyBatch.Add(company);
 				}
+
+				if (companyBatch.Any())
+				{
+					await _companyRepository.InsertOrUpdateAsyncBatch(companyBatch);
+					Console.WriteLine($"Processed {companyBatch.Count} companies");
+					companyBatch.Clear();
+				}
+
+				offset += BATCH_SIZE;
+				await Task.Delay(DELAY_BETWEEN_BATCHES_MS);
 			}
 
-			await _companyRepository.InsertOrUpdateAsyncBatch(companyList);
+			Console.WriteLine("Incremental companies import completed");
 		}
 
-		public async Task ImportPlatformsAsync()
+		private async Task ImportPlatformsIncrementalAsync(long unixTimestamp)
 		{
-			int limit = 500;
+			Console.WriteLine("Starting incremental platforms import...");
+
 			int offset = 0;
 			bool hasMore = true;
-			var platformList = new List<Platform>();
+			var platformBatch = new List<Platform>();
 
 			while (hasMore)
 			{
 				var result = await _client.QueryAsync<IGDB.Models.Platform>(
 					IGDBClient.Endpoints.Platforms,
-					$"fields id,name,abbreviation; limit {limit}; offset {offset};"
+					$"fields id,name,abbreviation,updated_at; where updated_at >= {unixTimestamp}; limit {BATCH_SIZE}; offset {offset};"
 				);
-				offset += limit;
+
 				if (result.Count() == 0)
 				{
 					hasMore = false;
@@ -361,690 +400,185 @@ namespace SavePoint.BusinessLogic.Services
 						Name = p.Name,
 						Abbreviation = p.Abbreviation
 					};
-					platformList.Add(platform);
+					platformBatch.Add(platform);
 				}
+
+				if (platformBatch.Any())
+				{
+					await _platformRepository.InsertOrUpdateAsyncBatch(platformBatch);
+					Console.WriteLine($"Processed {platformBatch.Count} platforms");
+					platformBatch.Clear();
+				}
+
+				offset += BATCH_SIZE;
+				await Task.Delay(DELAY_BETWEEN_BATCHES_MS);
 			}
 
-			await _platformRepository.InsertOrUpdateAsyncBatch(platformList);
+			Console.WriteLine("Incremental platforms import completed");
 		}
 
-		public async Task ImportPopularityAsync()
+		private async Task ImportPopularityForGamesBatch(List<(Game entity, long externalId)> gameEntities)
 		{
-			int limit = 500;
-			int[] popularityTypes = new int[] { 1, 2, 5 };
-			var allGames = await _gameRepository.GetAllAsync();
-			var gameExternalIdMap = allGames.ToDictionary(g => g.ExternalId, g => g.Id);
+			if (!gameEntities.Any()) return;
 
-			foreach (var popularityType in popularityTypes)
+			try
 			{
-				int offset = 0;
-				bool hasMore = true;
-				var popularityList = new List<Popularity>();
+				var gameExternalIds = gameEntities.Select(g => g.externalId).ToList();
+				var gameIdString = string.Join(",", gameExternalIds);
+				var gameIdMap = gameEntities.ToDictionary(g => g.externalId, g => g.entity.Id);
 
-				while (hasMore)
-				{
-					var result = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
-						IGDBClient.Endpoints.PopularityPrimitives,
-						$"fields game_id,value,popularity_type; limit {limit}; offset {offset}; where popularity_type = {popularityType};"
-					);
+				Console.WriteLine($"Importing popularity for {gameEntities.Count} games...");
 
-					if (result.Count() == 0)
-					{
-						hasMore = false;
-						break;
-					}
+				var allPopularityData = new List<Popularity>();
 
-					foreach (var p in result)
-					{
-						// Only create popularity records for games we have imported
-						if (gameExternalIdMap.TryGetValue((long)p.GameId, out var gameId))
-						{
-							var popularity = new Popularity
-							{
-								Id = Guid.NewGuid(),
-								ExternalGameId = (long)p.GameId,
-								GameId = gameId, 
-								PopularityScore = (decimal)p.Value,
-								PopularityType = (long)p.PopularityType.Id,
-								CreatedAt = DateTime.UtcNow,
-								UpdatedAt = DateTime.UtcNow
-							};
-							popularityList.Add(popularity);
-						}
-					}
-
-					// Save all popularity records for this batch
-					if (popularityList.Any())
-					{
-						await _popularityRepository.InsertOrUpdateAsyncBatch(popularityList);
-					}
-					offset += limit;
-				}
-
-			
-			}
-		}
-
-		public async Task ImportGamesWithPopularityAsync()
-		{
-			var genreList = await _genreRepository.GetAllAsync();
-			var platformList = await _platformRepository.GetAllAsync();
-			var companyList = await _companyRepository.GetAllAsync();
-
-			int limit = 500;
-			int offset = 0;
-			bool hasMore = true;
-
-			while (hasMore)
-			{
-				// Import games with popularity data included in the query
-				var games = await _client.QueryAsync<IGDB.Models.Game>(
-					 IGDBClient.Endpoints.Games,
-					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; limit {limit}; offset {offset};"
-					);
-
-				if (games.Count() == 0)
-				{
-					hasMore = false;
-					break;
-				}
-
-				// Get game IDs for this batch to fetch their popularity data
-				var gameIds = games.Select(g => g.Id).ToArray();
-				var gameIdString = string.Join(",", gameIds);
-
-				// Fetch popularity data for these specific games
-				var popularityData = new List<IGDB.Models.PopularityPrimitive>();
-				int[] popularityTypes = new int[] { 1, 2, 5 };
-
-				foreach (var popularityType in popularityTypes)
-				{
-					var popularityResult = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
-						IGDBClient.Endpoints.PopularityPrimitives,
-						$"fields game_id,value,popularity_type; where game_id = ({gameIdString}) & popularity_type = {popularityType};"
-					);
-					popularityData.AddRange(popularityResult);
-				}
-
-				// Group popularity data by game ID
-				var popularityByGame = popularityData.GroupBy(p => p.GameId).ToDictionary(g => g.Key, g => g.ToList());
-
-				foreach (var game in games)
-				{
-					if (game != null)
-					{
-						var coverUrl = game.Cover?.Value?.Url;
-						var genresExternalIds = game.Genres?.Ids;
-						var platformsExternalIds = game.Platforms?.Ids;
-
-						// Map IGDB genre IDs to internal GUIDs
-						List<GameGenre> gameGenres = new();
-						if (genresExternalIds != null && genresExternalIds.Any())
-						{
-							var internalGenres = genreList.Where(g => genresExternalIds.Contains((long)g.ExternalId)).ToList();
-							foreach (var genre in internalGenres)
-							{
-								gameGenres.Add(new GameGenre
-								{
-									GenreId = genre.Id,
-									Id = Guid.NewGuid()
-								});
-							}
-						}
-
-						//Map IGDB platform IDs to internal GUIDs
-						List<GamePlatform> gamePlatforms = new();
-						if (platformsExternalIds != null && platformsExternalIds.Any())
-						{
-							var internalPlatforms = platformList.Where(p => platformsExternalIds.Contains((long)p.ExternalId)).ToList();
-							foreach (var platform in internalPlatforms)
-							{
-								gamePlatforms.Add(new GamePlatform
-								{
-									PlatformId = platform.Id,
-									Id = Guid.NewGuid()
-								});
-							}
-						}
-
-						// Map IGDB company relationships
-						List<GameCompany> gameCompanies = new();
-						if (game.InvolvedCompanies != null)
-						{
-							foreach (var involvedCompany in game.InvolvedCompanies.Values)
-							{
-								var company = companyList.FirstOrDefault(c => c.ExternalId == involvedCompany.Company.Id);
-								if (company != null)
-								{
-									// Add as developer if flagged as developer
-									if (involvedCompany.Developer == true)
-									{
-										gameCompanies.Add(new GameCompany
-										{
-											Id = Guid.NewGuid(),
-											CompanyId = company.Id,
-											Role = CompanyRole.Developer
-										});
-									}
-
-									// Add as publisher if flagged publisher
-									if (involvedCompany.Publisher == true)
-									{
-										gameCompanies.Add(new GameCompany
-										{
-											Id = Guid.NewGuid(),
-											CompanyId = company.Id,
-											Role = CompanyRole.Publisher
-										});
-									}
-								}
-							}
-						}
-
-						// Map popularity data for this game
-						List<Popularity> gamePopularities = new();
-						if (popularityByGame.TryGetValue(game.Id, out var gamePopularityData))
-						{
-							foreach (var popularity in gamePopularityData)
-							{
-								gamePopularities.Add(new Popularity
-								{
-									Id = Guid.NewGuid(),
-									ExternalGameId = (long)popularity.GameId,
-									PopularityScore = (decimal)popularity.Value,
-									PopularityType = (long)popularity.PopularityType.Id,
-									CreatedAt = DateTime.UtcNow,
-									UpdatedAt = DateTime.UtcNow
-								});
-							}
-						}
-
-						//create game entity
-						var gameEntity = new Game
-						{
-							Id = Guid.NewGuid(),
-							ExternalId = game.Id,
-							Name = game.Name,
-							Summary = game.Summary,
-							CoverUrl = coverUrl,
-							ReleaseDate = game.FirstReleaseDate?.UtcDateTime ?? DateTime.MinValue,
-							CreatedAt = DateTime.UtcNow,
-							UpdatedAt = DateTime.UtcNow,
-							GameGenres = gameGenres,
-							GamePlatforms = gamePlatforms,
-							GameCompanies = gameCompanies,
-							Popularities = gamePopularities
-						};
-
-						// Set the GameId for all related entities
-						gameGenres.ForEach(gg => gg.GameId = gameEntity.Id);
-						gamePlatforms.ForEach(gp => gp.GameId = gameEntity.Id);
-						gameCompanies.ForEach(gc => gc.GameId = gameEntity.Id);
-						gamePopularities.ForEach(gp => gp.GameId = gameEntity.Id);
-
-						await _gameRepository.InsertOrUpdateAsync(gameEntity);
-					}
-				}
-
-				offset += limit;
-			}
-		}
-
-		/*public async Task ImportPopularityAsync()
-		{
-			int limit = 500;
-			int offset = 0; ;
-			bool hasMore = true;
-			int[] popularityTypes = new int[] { 1, 2, 5}; 
-
-			var popularityList = new List<Popularity>();
-
-			foreach (var popularityType in popularityTypes)
-			{
-				while (hasMore)
-				{
-					var result = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
-						IGDBClient.Endpoints.PopularityPrimitives,
-						$"fields game_id,value,popularity_type; limit {limit}; offset {offset}; where popularity_type = {popularityType};"
-					);
-
-					offset += limit;
-
-					if (result.Count() == 0)
-					{
-						hasMore = false;
-						break;
-					}
-
-					foreach (var p in result)
-					{
-						var popularity = new Popularity
-						{
-							Id = Guid.NewGuid(),
-							ExternalGameId = (long)p.GameId,
-							PopularityScore = (decimal)p.Value,
-							PopularityType = (long)p.PopularityType.Id,
-							CreatedAt = DateTime.UtcNow,
-							UpdatedAt = DateTime.UtcNow
-						};
-						popularityList.Add(popularity);
-					}
-				}
-			}
-		
-		}*/
-
-		/// <summary>
-		/// Import everything in the correct order
-		/// </summary>
-		public async Task ImportAllDataAsync()
-		{
-			// Step 1: Import base entities first (no dependencies)
-			await ImportGenresAsync();
-			await ImportPlatformsAsync();
-			await ImportCompaniesAsync();
-
-			// Step 2: Import games with relationships
-			await ImportGamesAsync();
-
-			// Step 3: Import popularity data and link to existing games
-			await ImportPopularityAsync();
-		}
-
-		/// <summary>
-		/// Syncs popularity data for all existing games in the database
-		/// </summary>
-		public async Task SyncPopularityForExistingGamesAsync()
-		{
-			// Get all games from database
-			var allGames = await _gameRepository.GetAllAsync();
-			var gameExternalIdMap = allGames.ToDictionary(g => g.ExternalId, g => g.Id);
-
-			Console.WriteLine($"Found {allGames.Count} games in database. Starting popularity sync...");
-
-			int limit = 500;
-			int[] popularityTypes = new int[] { 1, 2, 5 };
-			int totalProcessed = 0;
-
-			// Process games in batches to avoid memory issues and API rate limits
-			int batchSize = 500;
-			var gameExternalIds = allGames.Select(g => g.ExternalId).ToList();
-
-			for (int batchIndex = 0; batchIndex < gameExternalIds.Count; batchIndex += batchSize)
-			{
-				var gameBatch = gameExternalIds.Skip(batchIndex).Take(batchSize).ToList();
-				var gameIdString = string.Join(",", gameBatch);
-
-				Console.WriteLine($"Processing batch {(batchIndex / batchSize) + 1}/{(gameExternalIds.Count + batchSize - 1) / batchSize} ({gameBatch.Count} games)");
-
-				foreach (var popularityType in popularityTypes)
-				{
-					int offset = 0;
-					bool hasMore = true;
-					var popularityList = new List<Popularity>();
-
-					while (hasMore)
-					{
-						try
-						{
-							var result = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
-								IGDBClient.Endpoints.PopularityPrimitives,
-								$"fields game_id,value,popularity_type; limit {limit}; offset {offset}; where game_id = ({gameIdString}) & popularity_type = {popularityType};"
-							);
-
-							if (result.Count() == 0)
-							{
-								hasMore = false;
-								break;
-							}
-
-							foreach (var p in result)
-							{
-								// Only create popularity records for games we have in our database
-								if (gameExternalIdMap.TryGetValue((long)p.GameId, out var gameId))
-								{
-									var popularity = new Popularity
-									{
-										Id = Guid.NewGuid(),
-										ExternalGameId = (long)p.GameId,
-										GameId = gameId,
-										PopularityScore = (decimal)p.Value,
-										PopularityType = (long)p.PopularityType.Id,
-										CreatedAt = DateTime.UtcNow,
-										UpdatedAt = DateTime.UtcNow
-									};
-									popularityList.Add(popularity);
-								}
-							}
-
-
-							// Save all popularity records for this type and batch
-							if (popularityList.Any())
-							{
-								try
-								{
-									await _popularityRepository.InsertOrUpdateAsyncBatch(popularityList);
-									totalProcessed += popularityList.Count;
-									Console.WriteLine($"Saved {popularityList.Count} popularity records for type {popularityType}");
-								}
-								catch (Exception ex)
-								{
-									Console.WriteLine($"Error saving popularity data for type {popularityType}: {ex.Message}");
-								}
-							}
-
-							offset += limit;
-						}
-						catch (Exception ex)
-						{
-							Console.WriteLine($"Error fetching popularity data for type {popularityType}, offset {offset}: {ex.Message}");
-							// Continue with next batch instead of failing completely
-							hasMore = false;
-						}
-					}
-
-				}
-			}
-
-			Console.WriteLine($"Popularity sync completed. Total records processed: {totalProcessed}");
-		}
-		/// <summary>
-		/// Imports popularity data for the three specified types (1, 2, 5) for games already in the database
-		/// </summary>
-		public async Task ImportPopularityForExistingGamesAsync()
-		{
-			// Get all games from database
-			var allGames = await _gameRepository.GetAllAsync();
-			var gameExternalIdMap = allGames.ToDictionary(g => g.ExternalId, g => g.Id);
-
-			Console.WriteLine($"Found {allGames.Count} games in database. Starting popularity import...");
-
-			int limit = 500;
-			int[] popularityTypes = new int[] { 1, 2, 5 };
-			int totalProcessed = 0;
-
-			// Process each popularity type separately
-			foreach (var popularityType in popularityTypes)
-			{
-				Console.WriteLine($"Processing popularity type {popularityType}...");
-
-				int offset = 0;
-				bool hasMore = true;
-
-				while (hasMore)
+				// Fetch popularity for all games in batch for each popularity type
+				foreach (var popularityType in POPULARITY_TYPES)
 				{
 					try
 					{
-						var result = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
+						var popularityResult = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
 							IGDBClient.Endpoints.PopularityPrimitives,
-							$"fields game_id,value,popularity_type; limit {limit}; offset {offset}; where popularity_type = {popularityType};"
+							$"fields game_id,value,popularity_type; where game_id = ({gameIdString}) & popularity_type = {popularityType};"
 						);
 
-						if (result.Count() == 0)
+						foreach (var p in popularityResult)
 						{
-							hasMore = false;
-							break;
-						}
-
-						var popularityList = new List<Popularity>();
-
-						foreach (var p in result)
-						{
-							// Only create popularity records for games we have in our database
-							if (gameExternalIdMap.TryGetValue((long)p.GameId, out var gameId))
+							if (p.GameId.HasValue && gameIdMap.TryGetValue(p.GameId.Value, out var internalGameId))
 							{
 								var popularity = new Popularity
 								{
 									Id = Guid.NewGuid(),
-									ExternalGameId = (long)p.GameId,
-									GameId = gameId,
+									ExternalGameId = p.GameId.Value,
+									GameId = internalGameId,
 									PopularityScore = (decimal)p.Value,
 									PopularityType = (long)p.PopularityType.Id,
 									CreatedAt = DateTime.UtcNow,
 									UpdatedAt = DateTime.UtcNow
 								};
-								popularityList.Add(popularity);
+								allPopularityData.Add(popularity);
 							}
 						}
-
-						// Save all popularity records for this batch
-						if (popularityList.Any())
-						{
-							try
-							{
-								await _popularityRepository.InsertOrUpdateAsyncBatch(popularityList);
-								totalProcessed += popularityList.Count;
-								Console.WriteLine($"Saved {popularityList.Count} popularity records for type {popularityType}, offset {offset}");
-							}
-							catch (Exception ex)
-							{
-								Console.WriteLine($"Error saving popularity data for type {popularityType}, offset {offset}: {ex.Message}");
-							}
-						}
-
-						offset += limit;
 					}
 					catch (Exception ex)
 					{
-						Console.WriteLine($"Error fetching popularity data for type {popularityType}, offset {offset}: {ex.Message}");
-						// Continue with next batch instead of failing completely
-						hasMore = false;
+						Console.WriteLine($"Error fetching popularity type {popularityType}: {ex.Message}");
 					}
 				}
 
-				Console.WriteLine($"Completed popularity type {popularityType}");
-			}
-
-			Console.WriteLine($"Popularity import completed. Total records processed: {totalProcessed}");
-		}
-
-		public async Task ImportGamesWithBatchedPopularityAsync()
-		{
-			var genreList = await _genreRepository.GetAllAsync();
-			var platformList = await _platformRepository.GetAllAsync();
-			var companyList = await _companyRepository.GetAllAsync();
-
-			int limit = 500;
-			int offset = 0;
-			int maxTotalGames = 5000; // Maximum number of games to import
-			int totalGamesImported = 0; // Track total games imported
-			bool hasMore = true;
-			int[] popularityTypes = new int[] { 1, 2, 5 };
-
-			Console.WriteLine($"Starting batched game import with immediate popularity sync (max {maxTotalGames} games)...");
-
-			while (hasMore && totalGamesImported < maxTotalGames)
-			{
-				// Calculate how many games we can still import in this batch
-				int remainingGames = maxTotalGames - totalGamesImported;
-				int currentBatchLimit = Math.Min(limit, remainingGames);
-
-				Console.WriteLine($"Processing batch starting at offset {offset} (importing up to {currentBatchLimit} games)...");
-
-				// Step 1: Import games (up to the remaining limit)
-				var games = await _client.QueryAsync<IGDB.Models.Game>(
-					 IGDBClient.Endpoints.Games,
-					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; limit {currentBatchLimit}; offset {offset};"
-					);
-
-				if (games.Count() == 0)
-				{
-					hasMore = false;
-					break;
-				}
-
-				// Step 2: Process and save games
-				var importedGameIds = new List<long>();
-				var gameExternalIdToInternalId = new Dictionary<long, Guid>();
-
-				foreach (var game in games)
-				{
-					if (game != null && totalGamesImported < maxTotalGames)
-					{
-						var coverUrl = game.Cover?.Value?.Url;
-						var genresExternalIds = game.Genres?.Ids;
-						var platformsExternalIds = game.Platforms?.Ids;
-
-						// Map IGDB genre IDs to internal GUIDs
-						List<GameGenre> gameGenres = new();
-						if (genresExternalIds != null && genresExternalIds.Any())
-						{
-							var internalGenres = genreList.Where(g => genresExternalIds.Contains((long)g.ExternalId)).ToList();
-							foreach (var genre in internalGenres)
-							{
-								gameGenres.Add(new GameGenre
-								{
-									GenreId = genre.Id,
-									Id = Guid.NewGuid()
-								});
-							}
-						}
-
-						//Map IGDB platform IDs to internal GUIDs
-						List<GamePlatform> gamePlatforms = new();
-						if (platformsExternalIds != null && platformsExternalIds.Any())
-						{
-							var internalPlatforms = platformList.Where(p => platformsExternalIds.Contains((long)p.ExternalId)).ToList();
-							foreach (var platform in internalPlatforms)
-							{
-								gamePlatforms.Add(new GamePlatform
-								{
-									PlatformId = platform.Id,
-									Id = Guid.NewGuid()
-								});
-							}
-						}
-
-						// Map IGDB company relationships
-						List<GameCompany> gameCompanies = new();
-						if (game.InvolvedCompanies != null)
-						{
-							foreach (var involvedCompany in game.InvolvedCompanies.Values)
-							{
-								var company = companyList.FirstOrDefault(c => c.ExternalId == involvedCompany.Company.Id);
-								if (company != null)
-								{
-									// Add as developer if flagged as developer
-									if (involvedCompany.Developer == true)
-									{
-										gameCompanies.Add(new GameCompany
-										{
-											Id = Guid.NewGuid(),
-											CompanyId = company.Id,
-											Role = CompanyRole.Developer
-										});
-									}
-
-									// Add as publisher if flagged publisher
-									if (involvedCompany.Publisher == true)
-									{
-										gameCompanies.Add(new GameCompany
-										{
-											Id = Guid.NewGuid(),
-											CompanyId = company.Id,
-											Role = CompanyRole.Publisher
-										});
-									}
-								}
-							}
-						}
-
-						//create game entity
-						var gameEntity = new Game
-						{
-							Id = Guid.NewGuid(),
-							ExternalId = game.Id,
-							Name = game.Name,
-							Summary = game.Summary,
-							CoverUrl = coverUrl,
-							ReleaseDate = game.FirstReleaseDate?.UtcDateTime ?? DateTime.MinValue,
-							CreatedAt = DateTime.UtcNow,
-							UpdatedAt = DateTime.UtcNow,
-							GameGenres = gameGenres,
-							GamePlatforms = gamePlatforms,
-							GameCompanies = gameCompanies
-						};
-
-						// Set the GameId for all related entities
-						gameGenres.ForEach(gg => gg.GameId = gameEntity.Id);
-						gamePlatforms.ForEach(gp => gp.GameId = gameEntity.Id);
-						gameCompanies.ForEach(gc => gc.GameId = gameEntity.Id);
-
-						await _gameRepository.InsertOrUpdateAsync(gameEntity);
-
-						// Track this game for popularity import
-						importedGameIds.Add((long)game.Id);
-						gameExternalIdToInternalId[(long)game.Id] = gameEntity.Id;
-						totalGamesImported++;
-					}
-				}
-
-				Console.WriteLine($"Imported {importedGameIds.Count} games (total: {totalGamesImported}/{maxTotalGames}). Now importing their popularity data...");
-
-				// Step 3: Import popularity data for this batch of games
-				if (importedGameIds.Any())
-				{
-					await ImportPopularityForGameBatch(importedGameIds, gameExternalIdToInternalId, popularityTypes);
-				}
-
-				offset += limit;
-					Console.WriteLine($"Completed batch. Moving to next batch...");
-			}
-
-			Console.WriteLine($"Batched game import with popularity sync completed! Total games imported: {totalGamesImported}");
-		}
-
-		private async Task ImportPopularityForGameBatch(List<long> gameExternalIds, Dictionary<long, Guid> gameExternalIdToInternalId, int[] popularityTypes)
-		{
-			var gameIdString = string.Join(",", gameExternalIds);
-			var allPopularityData = new List<Popularity>();
-
-			foreach (var popularityType in popularityTypes)
-			{
-				try
-				{
-					var popularityResult = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
-						IGDBClient.Endpoints.PopularityPrimitives,
-						$"fields game_id,value,popularity_type; where game_id = ({gameIdString}) & popularity_type = {popularityType};"
-					);
-
-					foreach (var p in popularityResult)
-					{
-						if (gameExternalIdToInternalId.TryGetValue((long)p.GameId, out var internalGameId))
-						{
-							var popularity = new Popularity
-							{
-								Id = Guid.NewGuid(),
-								ExternalGameId = (long)p.GameId,
-								GameId = internalGameId,
-								PopularityScore = (decimal)p.Value,
-								PopularityType = (long)p.PopularityType.Id,
-								CreatedAt = DateTime.UtcNow,
-								UpdatedAt = DateTime.UtcNow
-							};
-							allPopularityData.Add(popularity);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine($"Error fetching popularity data for type {popularityType}: {ex.Message}");
-				}
-			}
-
-			// Save all popularity data for this batch
-			if (allPopularityData.Any())
-			{
-				try
+				// Save all popularity data in one batch
+				if (allPopularityData.Any())
 				{
 					await _popularityRepository.InsertOrUpdateAsyncBatch(allPopularityData);
-					Console.WriteLine($"Saved {allPopularityData.Count} popularity records for this batch");
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine($"Error saving popularity data: {ex.Message}");
+					Console.WriteLine($"Imported {allPopularityData.Count} popularity records");
 				}
 			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error in batch popularity import: {ex.Message}");
+			}
+		}
+
+		private async Task ImportPopularityForGame(long externalGameId, Guid internalGameId)
+		{
+			// Keep this method for backward compatibility, but use batch method when possible
+			await ImportPopularityForGamesBatch(new List<(Game, long)> { (new Game { Id = internalGameId }, externalGameId) });
+		}
+
+		private async Task<Game> CreateGameEntity(IGDB.Models.Game game, 
+			IEnumerable<Genre> genreList, 
+			IEnumerable<Platform> platformList, 
+			IEnumerable<Company> companyList)
+		{
+			var coverUrl = game.Cover?.Value?.Url;
+			var genresExternalIds = game.Genres?.Ids;
+			var platformsExternalIds = game.Platforms?.Ids;
+
+			// Map IGDB genre IDs to internal GUIDs
+			List<GameGenre> gameGenres = new();
+			if (genresExternalIds != null && genresExternalIds.Any())
+			{
+				var internalGenres = genreList.Where(g => genresExternalIds.Contains((long)g.ExternalId)).ToList();
+				foreach (var genre in internalGenres)
+				{
+					gameGenres.Add(new GameGenre
+					{
+						GenreId = genre.Id,
+						Id = Guid.NewGuid()
+					});
+				}
+			}
+
+			//Map IGDB platform IDs to internal GUIDs
+			List<GamePlatform> gamePlatforms = new();
+			if (platformsExternalIds != null && platformsExternalIds.Any())
+			{
+				var internalPlatforms = platformList.Where(p => platformsExternalIds.Contains((long)p.ExternalId)).ToList();
+				foreach (var platform in internalPlatforms)
+				{
+					gamePlatforms.Add(new GamePlatform
+					{
+						PlatformId = platform.Id,
+						Id = Guid.NewGuid()
+					});
+				}
+			}
+
+			// Map IGDB company relationships
+			List<GameCompany> gameCompanies = new();
+			if (game.InvolvedCompanies != null)
+			{
+				foreach (var involvedCompany in game.InvolvedCompanies.Values)
+				{
+					var company = companyList.FirstOrDefault(c => c.ExternalId == involvedCompany.Company.Id);
+					if (company != null)
+					{
+						// Add as developer if flagged as developer
+						if (involvedCompany.Developer == true)
+						{
+							gameCompanies.Add(new GameCompany
+							{
+								Id = Guid.NewGuid(),
+								CompanyId = company.Id,
+								Role = CompanyRole.Developer
+							});
+						}
+
+						// Add as publisher if flagged publisher
+						if (involvedCompany.Publisher == true)
+						{
+							gameCompanies.Add(new GameCompany
+							{
+								Id = Guid.NewGuid(),
+								CompanyId = company.Id,
+								Role = CompanyRole.Publisher
+							});
+						}
+					}
+				}
+			}
+
+			//create game entity
+			var gameEntity = new Game
+			{
+				Id = Guid.NewGuid(),
+				ExternalId = game.Id,
+				Name = game.Name,
+				Summary = game.Summary,
+				CoverUrl = coverUrl,
+				ReleaseDate = game.FirstReleaseDate?.UtcDateTime ?? DateTime.MinValue,
+				CreatedAt = DateTime.UtcNow,
+				UpdatedAt = DateTime.UtcNow,
+				GameGenres = gameGenres,
+				GamePlatforms = gamePlatforms,
+				GameCompanies = gameCompanies
+			};
+
+			// Set the GameId for all related entities
+			gameGenres.ForEach(gg => gg.GameId = gameEntity.Id);
+			gamePlatforms.ForEach(gp => gp.GameId = gameEntity.Id);
+			gameCompanies.ForEach(gc => gc.GameId = gameEntity.Id);
+
+			return gameEntity;
 		}
 	}
 }

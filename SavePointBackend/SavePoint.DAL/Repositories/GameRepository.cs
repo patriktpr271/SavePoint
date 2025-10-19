@@ -3,6 +3,7 @@ using SavePoint.DAL.Contexts;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Common;
 using SavePoint.Entities.Games;
+using SavePoint.Entities.Popularity;
 
 namespace SavePoint.DAL.Repositories
 {
@@ -204,10 +205,60 @@ namespace SavePoint.DAL.Repositories
 					});
 				}
 
+				// Update Popularities if provided
+				if (game.Popularities?.Any() == true)
+				{
+					// Remove existing popularities that are not in the new set
+					var newPopularityTypes = game.Popularities.Select(p => p.PopularityType).ToHashSet();
+					var popularitiesToRemove = existing.Popularities
+						.Where(p => !newPopularityTypes.Contains(p.PopularityType))
+						.ToList();
+					_context.Popularities.RemoveRange(popularitiesToRemove);
+
+					// Add or update popularities
+					var existingPopularityTypes = existing.Popularities.Select(p => p.PopularityType).ToHashSet();
+					foreach (var newPop in game.Popularities)
+					{
+						var existingPop = existing.Popularities
+							.FirstOrDefault(p => p.PopularityType == newPop.PopularityType);
+						
+						if (existingPop != null)
+						{
+							// Update existing
+							existingPop.PopularityScore = newPop.PopularityScore;
+							existingPop.UpdatedAt = DateTime.UtcNow;
+						}
+						else
+						{
+							// Add new
+							existing.Popularities.Add(new Popularity
+							{
+								Id = Guid.NewGuid(),
+								GameId = existing.Id,
+								ExternalGameId = newPop.ExternalGameId,
+								PopularityScore = newPop.PopularityScore,
+								PopularityType = newPop.PopularityType,
+								CreatedAt = DateTime.UtcNow,
+								UpdatedAt = DateTime.UtcNow
+							});
+						}
+					}
+				}
+
 				_context.Games.Update(existing);
 			}
 
 			await _context.SaveChangesAsync();
+		}
+
+		public async Task<HashSet<long>> GetExistingExternalIdsAsync(IEnumerable<long> externalIds)
+		{
+			var existingIds = await _context.Games
+				.Where(g => g.ExternalId.HasValue && externalIds.Contains(g.ExternalId.Value))
+				.Select(g => g.ExternalId.Value)
+				.ToListAsync();
+			
+			return new HashSet<long>(existingIds);
 		}
 
 		public async Task<Game?> GetByExternalIdAsync(long? externalId)
@@ -216,6 +267,7 @@ namespace SavePoint.DAL.Repositories
 				.Include(g => g.GameGenres)
 				.Include(g => g.GamePlatforms)
 				.Include(g => g.GameCompanies)
+				.Include(g => g.Popularities)
 				.FirstOrDefaultAsync(x => x.ExternalId == externalId);
 		}
 

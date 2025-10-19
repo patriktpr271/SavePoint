@@ -6,6 +6,7 @@ using SavePoint.Entities.Lists;
 using SavePoint.Entities.Reviews;
 using SavePoint.Common.Enums;
 using SavePoint.Entities.Popularity;
+using SavePoint.Entities.Jobs;
 
 namespace SavePoint.DAL.Contexts
 {
@@ -30,6 +31,10 @@ namespace SavePoint.DAL.Contexts
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListItem> UserListItems { get; set; }
         public DbSet<UserListVote> UserListVotes { get; set; }
+
+        // Job Management
+        public DbSet<ImportJobRun> ImportJobRuns { get; set; }
+        public DbSet<ImportStatistics> ImportStatistics { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -186,6 +191,34 @@ namespace SavePoint.DAL.Contexts
 					.WithMany(g => g.Popularities)
 					.HasForeignKey(p => p.GameId)
 					.OnDelete(DeleteBehavior.Cascade);
+			});
+
+			// ========= Import Job Management =========
+			modelBuilder.Entity<ImportJobRun>(entity =>
+			{
+				entity.HasKey(ijr => ijr.Id);
+				entity.HasIndex(ijr => new { ijr.JobType, ijr.StartedAt });
+				entity.HasIndex(ijr => ijr.Status);
+
+				entity.Property(ijr => ijr.Status)
+					.HasConversion<string>();
+
+				entity.Property(ijr => ijr.JobType)
+					.HasMaxLength(50)
+					.IsRequired();
+
+				entity.Property(ijr => ijr.ErrorMessage)
+					.HasMaxLength(1000);
+			});
+
+			modelBuilder.Entity<ImportStatistics>(entity =>
+			{
+				entity.HasKey(ist => ist.Id);
+				entity.HasIndex(ist => ist.DataType).IsUnique();
+
+				entity.Property(ist => ist.DataType)
+					.HasMaxLength(50)
+					.IsRequired();
 			});
 		}
 	}

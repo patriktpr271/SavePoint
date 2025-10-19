@@ -63,6 +63,9 @@ namespace SavePoint.Host.Configuration
             app.UseAuthentication();
             app.UseAuthorization();
 
+            // Hangfire dashboard (after authentication for security)
+            app.UseHangfireDashboard();
+
             app.MapControllers();
 
             // Only use fallback to index.html in production (for SPA routing)
