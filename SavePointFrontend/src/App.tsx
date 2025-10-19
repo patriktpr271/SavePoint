@@ -21,7 +21,6 @@ function App() {
             <Routes>
               <Route path="/" element={<HomeScreen />} />
               <Route path="/videogames" element={<VideogamesPage />} />
-              <Route path="/weather" element={<WeatherPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
               <Route path="/lists" element={<UserListsPage />} />
               <Route path="/lists/:id" element={<ListDetailPage />} />
