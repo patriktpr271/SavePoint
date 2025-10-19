@@ -34,13 +34,13 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
 
-  <Target Name="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish" Condition="'$(PublishProtocol)' != '' Or '$(WebPublishMethod)' != ''">
+  <Target Name="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish">
     <Message Text="Building frontend for Azure deployment..." Importance="high" />
     <Exec Command="npm ci" WorkingDirectory="$(SpaRoot)" Condition="Exists('$(SpaRoot)package-lock.json')" />
     <Exec Command="npm install" WorkingDirectory="$(SpaRoot)" Condition="!Exists('$(SpaRoot)package-lock.json')" />
     <Exec Command="npm run build" WorkingDirectory="$(SpaRoot)" />
   </Target>
-  <Target Name="IncludeFrontendInPublish" AfterTargets="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish" Condition="'$(PublishProtocol)' != '' Or '$(WebPublishMethod)' != ''">
+  <Target Name="IncludeFrontendInPublish" AfterTargets="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish">
     <Message Text="Including frontend files in Azure deployment..." Importance="high" />
     
     <ItemGroup Condition="Exists('$(SpaRoot)dist')">
