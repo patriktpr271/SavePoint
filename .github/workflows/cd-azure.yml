@@ -42,7 +42,17 @@ jobs:
       run: dotnet test SavePointBackend/SavePointBackend.sln --configuration Release --no-build --verbosity normal
       
     - name: Publish .NET application
-      run: dotnet publish SavePointBackend/SavePoint.Host/SavePoint.Host.csproj --configuration Release --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      run: dotnet publish SavePointBackend/SavePoint.Host/SavePoint.Host.csproj --configuration Release --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --self-contained false
+      
+    - name: Verify publish output
+      run: |
+        echo "📦 Published files:"
+        ls -la ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        echo ""
+        echo "🔍 Checking for key files:"
+        test -f "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/SavePoint.Host.dll" && echo "✅ SavePoint.Host.dll found" || echo "❌ SavePoint.Host.dll NOT found"
+        test -f "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/web.config" && echo "✅ web.config found" || echo "❌ web.config NOT found"
+        test -d "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/wwwroot" && echo "✅ wwwroot folder found" || echo "⚠️ wwwroot folder NOT found"
       
     - name: Upload artifact for deployment
       uses: actions/upload-artifact@v4
