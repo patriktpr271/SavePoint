@@ -51,3 +51,9 @@ ehthumbs.db
 
 # IIS Express folder
 .vsconfig
+/SETUP_STEPS.md
+/SETUP_CHECKLIST.md
+/PIPELINE_FLOW.md
+/GITHUB_ACTIONS_SETUP.md
+/DEPLOYMENT_OPTIONS.md
+/.github/BADGES.md
