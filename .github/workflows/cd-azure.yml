@@ -59,6 +59,12 @@ jobs:
         test -f "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/SavePoint.Host.dll" && echo "✅ SavePoint.Host.dll found" || echo "❌ SavePoint.Host.dll NOT found"
         test -f "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/web.config" && echo "✅ web.config found" || echo "❌ web.config NOT found"
         test -d "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/wwwroot" && echo "✅ wwwroot folder found" || echo "⚠️ wwwroot folder NOT found"
+        echo ""
+        echo "🎨 Frontend files in wwwroot:"
+        ls -la "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/wwwroot/" || echo "❌ wwwroot is empty or doesn't exist"
+        echo ""
+        echo "📁 Frontend assets:"
+        ls -la "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/wwwroot/assets/" || echo "❌ assets folder doesn't exist"
       
     - name: Upload artifact for deployment
       uses: actions/upload-artifact@v4
@@ -86,6 +92,7 @@ jobs:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        clean: true
     
     - name: Deployment Summary
       run: |
