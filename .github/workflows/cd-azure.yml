@@ -32,6 +32,9 @@ jobs:
         cache: 'npm'
         cache-dependency-path: SavePointFrontend/package-lock.json
     
+    - name: Clean frontend build cache
+      run: rm -rf SavePointFrontend/dist SavePointFrontend/node_modules/.vite
+      
     - name: Restore .NET dependencies
       run: dotnet restore SavePointBackend/SavePointBackend.sln
       
@@ -40,6 +43,9 @@ jobs:
       
     - name: Run tests
       run: dotnet test SavePointBackend/SavePointBackend.sln --configuration Release --no-build --verbosity normal
+      
+    - name: Clean publish directory
+      run: rm -rf ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
       
     - name: Publish .NET application
       run: dotnet publish SavePointBackend/SavePoint.Host/SavePoint.Host.csproj --configuration Release --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --self-contained false
