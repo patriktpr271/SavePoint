@@ -1,6 +1,5 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import WeatherPage from './pages/weatherpage';
 import VideogamesPage from './pages/VideogamesPage';
 import UserProfilePage from './pages/UserProfilePage';
 import UserListsPage from './pages/UserListsPage';
@@ -22,7 +21,6 @@ function App() {
             <Routes>
               <Route path="/" element={<HomeScreen />} />
               <Route path="/videogames" element={<VideogamesPage />} />
-              <Route path="/weather" element={<WeatherPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
               <Route path="/lists" element={<UserListsPage />} />
               <Route path="/lists/:id" element={<ListDetailPage />} />
