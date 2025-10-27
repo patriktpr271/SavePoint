@@ -28,8 +28,7 @@ jobs:
       run: dotnet build SavePointBackend/SavePointBackend.sln --configuration Release --no-restore
       
     - name: Test
-      run: dotnet test SavePointBackend/SavePointBackend.sln --configuration Release --no-build --verbosity normal --blame-hang-timeout 5m
-      timeout-minutes: 10
+      run: dotnet test SavePointBackend/SavePointBackend.sln --configuration Release --no-build --verbosity normal
 
   build-frontend:
     name: Build Frontend

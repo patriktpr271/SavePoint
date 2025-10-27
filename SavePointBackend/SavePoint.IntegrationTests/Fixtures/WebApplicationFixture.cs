@@ -65,21 +65,13 @@ namespace SavePoint.IntegrationTests.Fixtures
                     services.Remove(descriptor);
                 }
 
-                // Replace Hangfire SQL Server storage with InMemory storage
-                // Find and remove only the IGlobalConfiguration service (Hangfire configuration)
-                var hangfireConfig = services.FirstOrDefault(d => d.ServiceType == typeof(IGlobalConfiguration));
-                if (hangfireConfig != null)
-                {
-                    services.Remove(hangfireConfig);
-                }
-
-                // Remove Hangfire server (background job processor) to prevent hanging
-                // Remove ALL Hangfire-related services completely
+                // Remove Hangfire completely from tests to prevent background processes
+                // Remove ALL Hangfire-related services (configuration, storage, background processes, hosted services)
                 var hangfireServices = services
                     .Where(d => d.ServiceType.Namespace?.StartsWith("Hangfire") == true ||
                                d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true ||
-                               d.ServiceType == typeof(IHostedService) && 
-                               d.ImplementationType?.Name == "JobInitializationService")
+                               (d.ServiceType == typeof(IHostedService) && 
+                                d.ImplementationType?.Name == "JobInitializationService"))
                     .ToList();
                 
                 foreach (var service in hangfireServices)

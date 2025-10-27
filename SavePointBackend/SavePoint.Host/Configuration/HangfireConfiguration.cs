@@ -11,9 +11,19 @@ namespace SavePoint.Host.Configuration
         /// </summary>
         /// <param name="services">The service collection</param>
         /// <param name="configuration">The application configuration</param>
+        /// <param name="environment">The hosting environment</param>
         /// <returns>The configured service collection</returns>
-        public static IServiceCollection AddHangfireServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddHangfireServices(
+            this IServiceCollection services, 
+            IConfiguration configuration, 
+            IHostEnvironment environment)
         {
+            // Skip Hangfire registration in test environment
+            if (environment.IsEnvironment("Test"))
+            {
+                return services;
+            }
+
             // Get connection string
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -53,6 +63,12 @@ namespace SavePoint.Host.Configuration
         /// <returns>The configured application</returns>
         public static WebApplication UseHangfireDashboard(this WebApplication app)
         {
+            // Skip Hangfire dashboard in test environment
+            if (app.Environment.IsEnvironment("Test"))
+            {
+                return app;
+            }
+
             // Configure Hangfire Dashboard with authentication
             app.UseHangfireDashboard("/hangfire", new DashboardOptions
             {
