@@ -82,6 +82,13 @@ namespace SavePoint.IntegrationTests.Fixtures
                     services.Remove(hangfireServer);
                 }
 
+                // Remove JobInitializationService hosted service
+                var jobInitService = services.FirstOrDefault(d => d.ImplementationType?.Name == "JobInitializationService");
+                if (jobInitService != null)
+                {
+                    services.Remove(jobInitService);
+                }
+
                 // Re-add Hangfire with InMemory storage for tests (without server)
                 services.AddHangfire(config =>
                 {
