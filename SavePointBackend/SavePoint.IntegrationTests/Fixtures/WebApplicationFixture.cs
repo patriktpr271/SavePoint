@@ -9,6 +9,7 @@ using Bogus;
 using System.Runtime.InteropServices;
 using Hangfire;
 using Hangfire.InMemory;
+using Microsoft.Data.Sqlite;
 
 namespace SavePoint.IntegrationTests.Fixtures
 {
@@ -16,13 +17,21 @@ namespace SavePoint.IntegrationTests.Fixtures
     {
         private readonly bool _useInMemoryDatabase;
         private readonly string? _connectionString;
+        private SqliteConnection? _sqliteConnection;
 
         public WebApplicationFixture()
         {
             // Use SQLite in-memory on Linux (CI), LocalDB on Windows (local dev)
             _useInMemoryDatabase = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
             
-            if (!_useInMemoryDatabase)
+            if (_useInMemoryDatabase)
+            {
+                // Create a persistent in-memory SQLite connection
+                // This connection must stay open for the lifetime of the tests
+                _sqliteConnection = new SqliteConnection("DataSource=:memory:");
+                _sqliteConnection.Open();
+            }
+            else
             {
                 _connectionString = $"Server=(localdb)\\mssqllocaldb;Database=SavePointIntegrationTest_{Guid.NewGuid()};Trusted_Connection=true;MultipleActiveResultSets=true";
             }
@@ -80,7 +89,8 @@ namespace SavePoint.IntegrationTests.Fixtures
                 {
                     services.AddDbContext<ApplicationDbContext>(options =>
                     {
-                        options.UseSqlite($"DataSource=InMemoryTestDb_{Guid.NewGuid()};Mode=Memory;Cache=Shared");
+                        // Use the persistent SQLite connection
+                        options.UseSqlite(_sqliteConnection!);
                     });
                 }
                 else
@@ -184,9 +194,15 @@ namespace SavePoint.IntegrationTests.Fixtures
             {
                 try
                 {
-                    // Clean up the database (only needed for LocalDB, SQLite in-memory auto-cleans)
-                    if (!_useInMemoryDatabase)
+                    if (_useInMemoryDatabase)
                     {
+                        // Close and dispose the SQLite connection
+                        _sqliteConnection?.Close();
+                        _sqliteConnection?.Dispose();
+                    }
+                    else
+                    {
+                        // Clean up the LocalDB database
                         using var scope = Services.CreateScope();
                         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                         context.Database.EnsureDeleted();
