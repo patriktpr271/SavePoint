@@ -74,7 +74,14 @@ namespace SavePoint.IntegrationTests.Fixtures
                     services.Remove(hangfireConfig);
                 }
 
-                // Re-add Hangfire with InMemory storage for tests
+                // Remove Hangfire server (background job processor) to prevent hanging
+                var hangfireServer = services.FirstOrDefault(d => d.ImplementationType?.Name == "BackgroundJobServer");
+                if (hangfireServer != null)
+                {
+                    services.Remove(hangfireServer);
+                }
+
+                // Re-add Hangfire with InMemory storage for tests (without server)
                 services.AddHangfire(config =>
                 {
                     config
