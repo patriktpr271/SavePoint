@@ -58,21 +58,21 @@ namespace SavePoint.IntegrationTests.Fixtures
                 }
 
                 // Replace Hangfire SQL Server storage with InMemory storage
-                // Remove existing Hangfire configuration
-                var hangfireDescriptors = services.Where(d => 
-                    d.ServiceType.Namespace?.StartsWith("Hangfire") == true ||
-                    d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true)
-                    .ToList();
-                
-                foreach (var desc in hangfireDescriptors)
+                // Find and remove only the IGlobalConfiguration service (Hangfire configuration)
+                var hangfireConfig = services.FirstOrDefault(d => d.ServiceType == typeof(IGlobalConfiguration));
+                if (hangfireConfig != null)
                 {
-                    services.Remove(desc);
+                    services.Remove(hangfireConfig);
                 }
 
-                // Add Hangfire with InMemory storage for tests
+                // Re-add Hangfire with InMemory storage for tests
                 services.AddHangfire(config =>
                 {
-                    config.UseInMemoryStorage();
+                    config
+                        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                        .UseSimpleAssemblyNameTypeSerializer()
+                        .UseRecommendedSerializerSettings()
+                        .UseInMemoryStorage();
                 });
 
                 // Add test database - SQLite in-memory on Linux, LocalDB on Windows
