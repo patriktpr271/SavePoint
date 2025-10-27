@@ -6,28 +6,46 @@ using SavePoint.DAL.Contexts;
 using SavePoint.Entities.Users;
 using SavePoint.Entities.Games;
 using Bogus;
+using System.Runtime.InteropServices;
+using Hangfire;
+using Hangfire.InMemory;
 
 namespace SavePoint.IntegrationTests.Fixtures
 {
     public class WebApplicationFixture : WebApplicationFactory<Program>
     {
-        private readonly string _connectionString;
+        private readonly bool _useInMemoryDatabase;
+        private readonly string? _connectionString;
 
         public WebApplicationFixture()
         {
-            _connectionString = $"Server=(localdb)\\mssqllocaldb;Database=SavePointIntegrationTest_{Guid.NewGuid()};Trusted_Connection=true;MultipleActiveResultSets=true";
+            // Use SQLite in-memory on Linux (CI), LocalDB on Windows (local dev)
+            _useInMemoryDatabase = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+            
+            if (!_useInMemoryDatabase)
+            {
+                _connectionString = $"Server=(localdb)\\mssqllocaldb;Database=SavePointIntegrationTest_{Guid.NewGuid()};Trusted_Connection=true;MultipleActiveResultSets=true";
+            }
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureAppConfiguration((context, config) =>
             {
-                // Load test configuration
-                config.AddJsonFile("appsettings.Test.json", optional: false)
-                      .AddInMemoryCollection(new Dictionary<string, string?>
-                      {
-                          ["ConnectionStrings:DefaultConnection"] = _connectionString
-                      });
+                if (!_useInMemoryDatabase && _connectionString != null)
+                {
+                    // Load test configuration for LocalDB
+                    config.AddJsonFile("appsettings.Test.json", optional: false)
+                          .AddInMemoryCollection(new Dictionary<string, string?>
+                          {
+                              ["ConnectionStrings:DefaultConnection"] = _connectionString
+                          });
+                }
+                else
+                {
+                    // Load test configuration for SQLite
+                    config.AddJsonFile("appsettings.Test.json", optional: false);
+                }
             });
 
             builder.ConfigureServices(services =>
@@ -39,11 +57,39 @@ namespace SavePoint.IntegrationTests.Fixtures
                     services.Remove(descriptor);
                 }
 
-                // Add test database
-                services.AddDbContext<ApplicationDbContext>(options =>
+                // Replace Hangfire SQL Server storage with InMemory storage
+                // Remove existing Hangfire configuration
+                var hangfireDescriptors = services.Where(d => 
+                    d.ServiceType.Namespace?.StartsWith("Hangfire") == true ||
+                    d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true)
+                    .ToList();
+                
+                foreach (var desc in hangfireDescriptors)
                 {
-                    options.UseSqlServer(_connectionString);
+                    services.Remove(desc);
+                }
+
+                // Add Hangfire with InMemory storage for tests
+                services.AddHangfire(config =>
+                {
+                    config.UseInMemoryStorage();
                 });
+
+                // Add test database - SQLite in-memory on Linux, LocalDB on Windows
+                if (_useInMemoryDatabase)
+                {
+                    services.AddDbContext<ApplicationDbContext>(options =>
+                    {
+                        options.UseSqlite($"DataSource=InMemoryTestDb_{Guid.NewGuid()};Mode=Memory;Cache=Shared");
+                    });
+                }
+                else
+                {
+                    services.AddDbContext<ApplicationDbContext>(options =>
+                    {
+                        options.UseSqlServer(_connectionString!);
+                    });
+                }
 
                 // Ensure database is created and seeded
                 var serviceProvider = services.BuildServiceProvider();
@@ -138,10 +184,13 @@ namespace SavePoint.IntegrationTests.Fixtures
             {
                 try
                 {
-                    // Try to clean up the database, but don't fail if it's already disposed
-                    using var scope = Services.CreateScope();
-                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    context.Database.EnsureDeleted();
+                    // Clean up the database (only needed for LocalDB, SQLite in-memory auto-cleans)
+                    if (!_useInMemoryDatabase)
+                    {
+                        using var scope = Services.CreateScope();
+                        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        context.Database.EnsureDeleted();
+                    }
                 }
                 catch
                 {
