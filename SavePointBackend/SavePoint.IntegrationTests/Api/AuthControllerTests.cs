@@ -169,7 +169,7 @@ namespace SavePoint.IntegrationTests.Api
         [Theory]
         [InlineData("")]
         [InlineData("ab")]
-        [InlineData("this_username_is_way_too_long_for_validation_rules")]
+        [InlineData("this_username_is_way_too_long_for_validation_rules_x")] // 52 chars > 50 max
         public async Task Register_WithInvalidUsername_ReturnsBadRequest(string invalidUsername)
         {
             // Arrange
