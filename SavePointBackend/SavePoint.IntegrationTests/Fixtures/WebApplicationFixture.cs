@@ -8,8 +8,6 @@ using SavePoint.Entities.Games;
 using SavePoint.Entities.Popularity;
 using Bogus;
 using System.Runtime.InteropServices;
-using Hangfire;
-using Hangfire.InMemory;
 using Microsoft.Data.Sqlite;
 
 namespace SavePoint.IntegrationTests.Fixtures
@@ -76,27 +74,21 @@ namespace SavePoint.IntegrationTests.Fixtures
                 }
 
                 // Remove Hangfire server (background job processor) to prevent hanging
-                // Remove ALL Hangfire-related hosted services
-                var hangfireHostedServices = services
-                    .Where(d => d.ServiceType == typeof(IHostedService) && 
-                               (d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true ||
-                                d.ImplementationType?.Name == "JobInitializationService"))
+                // Remove ALL Hangfire-related services completely
+                var hangfireServices = services
+                    .Where(d => d.ServiceType.Namespace?.StartsWith("Hangfire") == true ||
+                               d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true ||
+                               d.ServiceType == typeof(IHostedService) && 
+                               d.ImplementationType?.Name == "JobInitializationService")
                     .ToList();
                 
-                foreach (var service in hangfireHostedServices)
+                foreach (var service in hangfireServices)
                 {
                     services.Remove(service);
                 }
 
-                // Re-add Hangfire with InMemory storage for tests (without server)
-                services.AddHangfire(config =>
-                {
-                    config
-                        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                        .UseSimpleAssemblyNameTypeSerializer()
-                        .UseRecommendedSerializerSettings()
-                        .UseInMemoryStorage();
-                });
+                // Don't re-add Hangfire - completely remove it from tests to prevent background processes
+                // Tests don't need background job processing
 
                 // Add test database - SQLite in-memory on Linux, LocalDB on Windows
                 if (_useInMemoryDatabase)
