@@ -1,0 +1,11 @@
+global using Xunit;
+global using FluentAssertions;
+global using Microsoft.AspNetCore.Mvc.Testing;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.EntityFrameworkCore;
+global using SavePoint.DAL.Contexts;
+global using SavePoint.Entities.Users;
+global using SavePoint.Common.Dtos.Users;
+global using SavePoint.Common.Dtos.Games;
+global using SavePoint.Common.Dtos.Reviews;
+global using System.Net.Http.Json;

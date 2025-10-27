@@ -37,3 +37,6 @@ public class NoOpEmailSender : IEmailSender<SavePoint.Entities.Users.Application
         return Task.CompletedTask;
     }
 }
+
+// Make the Program class accessible to test projects
+public partial class Program { }
