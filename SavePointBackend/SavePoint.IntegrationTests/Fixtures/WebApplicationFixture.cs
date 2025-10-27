@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SavePoint.DAL.Contexts;
 using SavePoint.Entities.Users;
 using SavePoint.Entities.Games;
+using SavePoint.Entities.Popularity;
 using Bogus;
 using System.Runtime.InteropServices;
 using Hangfire;
@@ -190,6 +191,21 @@ namespace SavePoint.IntegrationTests.Fixtures
                     UpdatedAt = DateTime.UtcNow
                 };
                 context.GamePlatforms.Add(gamePlatform);
+
+                // Add popularity scores for different popularity types
+                for (int popularityType = 1; popularityType <= 3; popularityType++)
+                {
+                    var popularity = new Popularity
+                    {
+                        Id = Guid.NewGuid(),
+                        GameId = game.Id,
+                        PopularityType = popularityType,
+                        PopularityScore = Random.Shared.Next(50, 100),
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    context.Popularities.Add(popularity);
+                }
             }
 
             context.SaveChanges();
