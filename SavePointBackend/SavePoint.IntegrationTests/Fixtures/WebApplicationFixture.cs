@@ -76,17 +76,16 @@ namespace SavePoint.IntegrationTests.Fixtures
                 }
 
                 // Remove Hangfire server (background job processor) to prevent hanging
-                var hangfireServer = services.FirstOrDefault(d => d.ImplementationType?.Name == "BackgroundJobServer");
-                if (hangfireServer != null)
+                // Remove ALL Hangfire-related hosted services
+                var hangfireHostedServices = services
+                    .Where(d => d.ServiceType == typeof(IHostedService) && 
+                               (d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true ||
+                                d.ImplementationType?.Name == "JobInitializationService"))
+                    .ToList();
+                
+                foreach (var service in hangfireHostedServices)
                 {
-                    services.Remove(hangfireServer);
-                }
-
-                // Remove JobInitializationService hosted service
-                var jobInitService = services.FirstOrDefault(d => d.ImplementationType?.Name == "JobInitializationService");
-                if (jobInitService != null)
-                {
-                    services.Remove(jobInitService);
+                    services.Remove(service);
                 }
 
                 // Re-add Hangfire with InMemory storage for tests (without server)

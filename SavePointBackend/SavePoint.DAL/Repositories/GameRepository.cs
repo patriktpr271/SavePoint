@@ -304,15 +304,13 @@ namespace SavePoint.DAL.Repositories
 					.ThenInclude(gp => gp.Platform)
 				.Include(g => g.GameCompanies)
 					.ThenInclude(gc => gc.Company)
-				.Include(g => g.Popularities)
-				.Where(g => g.Popularities.Any(p => p.PopularityType == popularityType))
-				.OrderByDescending(g => g.Popularities
-					.Where(p => p.PopularityType == popularityType)
-					.Max(p => p.PopularityScore));
+			.Include(g => g.Popularities)
+			.Where(g => g.Popularities.Any(p => p.PopularityType == popularityType))
+			.OrderByDescending(g => g.Popularities
+				.Where(p => p.PopularityType == popularityType)
+				.Max(p => (double)p.PopularityScore)); // Cast to double for SQLite compatibility
 
-						var totalCount = await query.CountAsync();
-
-						var items = await query
+					var totalCount = await query.CountAsync();						var items = await query
 							.Skip((pageNumber - 1) * pageSize)
 							.Take(pageSize)
 							.ToListAsync();
