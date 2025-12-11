@@ -30,11 +30,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clear previous errors
     setError(null);
     setValidationErrors(null);
     
-    // Client-side validation
     if (!rating || rating < 1 || rating > 5) {
       setError('Please provide a rating between 1 and 5 stars');
       return;
@@ -45,7 +43,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       return;
     }
 
-    // Submit using enhanced error handling
     await submitForm(async () => {
       if (isEdit && existingReview) {
         const updateData: UpdateReviewDto = {
@@ -69,7 +66,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         setValidationErrors(errors);
       },
       onError: (error: AppError) => {
-        // For non-validation errors, show them locally
         setError(ErrorHandler.getUserFriendlyMessage(error));
       },
       context: isEdit ? 'Update Review' : 'Create Review'

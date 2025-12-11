@@ -4,7 +4,7 @@ using SavePoint.Host.Configuration;
 var builder = WebApplication.CreateBuilder(args);
 
 // Register all application services using the organized configuration classes
-builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddApplicationServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -37,3 +37,6 @@ public class NoOpEmailSender : IEmailSender<SavePoint.Entities.Users.Application
         return Task.CompletedTask;
     }
 }
+
+// Make the Program class accessible to test projects
+public partial class Program { }

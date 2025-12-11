@@ -35,14 +35,38 @@ jobs:
     - name: Clean frontend build cache
       run: rm -rf SavePointFrontend/dist SavePointFrontend/node_modules/.vite
       
+    - name: Install Frontend dependencies
+      run: npm ci
+      working-directory: SavePointFrontend
+      
+    - name: Run Frontend Tests
+      run: npm test -- --run
+      working-directory: SavePointFrontend
+      
+    - name: Upload Frontend Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-test-results
+        path: SavePointFrontend/coverage
+        retention-days: 7
+      
     - name: Restore .NET dependencies
       run: dotnet restore SavePointBackend/SavePointBackend.sln
       
     - name: Build .NET solution
       run: dotnet build SavePointBackend/SavePointBackend.sln --configuration Release --no-restore
       
-    - name: Run tests
-      run: dotnet test SavePointBackend/SavePointBackend.sln --configuration Release --no-build --verbosity normal
+    - name: Run Backend Tests
+      run: dotnet test SavePointBackend/SavePointBackend.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      
+    - name: Upload Backend Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-test-results
+        path: '**/test-results.trx'
+        retention-days: 7
       
     - name: Clean publish directory
       run: rm -rf ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

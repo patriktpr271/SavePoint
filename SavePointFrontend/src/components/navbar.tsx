@@ -12,8 +12,6 @@ export default function Navbar() {
   const { user, logout, loading } = useAuth();
 
   const handleLoginSuccess = (userData: any) => {
-    // The AuthContext will handle the user state
-    // You might want to show a success message here
   };
 
   const handleLogout = async () => {

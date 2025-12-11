@@ -64,6 +64,7 @@ namespace SavePoint.Host.Configuration
             app.UseAuthorization();
 
             // Hangfire dashboard (after authentication for security)
+            // Will be skipped automatically in test environment
             app.UseHangfireDashboard();
 
             app.MapControllers();

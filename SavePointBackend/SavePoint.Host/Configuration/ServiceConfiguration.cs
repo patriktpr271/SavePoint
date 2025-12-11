@@ -10,8 +10,12 @@ namespace SavePoint.Host.Configuration
         /// </summary>
         /// <param name="services">The service collection</param>
         /// <param name="configuration">The application configuration</param>
+        /// <param name="environment">The hosting environment</param>
         /// <returns>The configured service collection</returns>
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddApplicationServices(
+            this IServiceCollection services, 
+            IConfiguration configuration, 
+            IHostEnvironment environment)
         {
             // Core Web API services
             services.AddWebApiServices();
@@ -37,10 +41,11 @@ namespace SavePoint.Host.Configuration
             // External services (IGDB, etc.)
             services.AddExternalServices(configuration);
 
-            // Hangfire background job processing
-            services.AddHangfireServices(configuration);
+            // Hangfire background job processing (skipped in test environment)
+            services.AddHangfireServices(configuration, environment);
 
             return services;
         }
     }
+
 }

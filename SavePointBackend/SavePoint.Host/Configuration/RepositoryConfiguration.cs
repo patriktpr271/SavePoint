@@ -18,7 +18,7 @@ namespace SavePoint.Host.Configuration
             services.AddScoped<IImportJobRunRepository, ImportJobRunRepository>();
             services.AddScoped<IImportStatisticsRepository, ImportStatisticsRepository>();
 
-            return services;
+			return services;
         }
     }
 }
