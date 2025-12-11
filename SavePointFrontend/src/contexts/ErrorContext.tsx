@@ -2,15 +2,11 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { AppError, ErrorType, ErrorHandler } from '../services/errorHandler';
 
 interface ErrorContextType {
-  // Current error state
   error: AppError | null;
-  // Show/hide error
   showError: (error: AppError | string, context?: string) => void;
   clearError: () => void;
-  // Global loading state for operations that might error
   isLoading: boolean;
   setLoading: (loading: boolean) => void;
-  // Retry functionality
   retry?: () => void;
   setRetry: (retryFn?: () => void) => void;
 }

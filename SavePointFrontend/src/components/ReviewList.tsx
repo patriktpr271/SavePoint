@@ -27,7 +27,6 @@ const ReviewList: React.FC<ReviewListProps> = ({ gameId, gameName }) => {
 
   const pageSize = 10;
 
-  // Load reviews and user's review
   const loadReviews = async (page: number = 1, append: boolean = false) => {
     if (page === 1) setLoading(true);
     else setLoadingMore(true);
@@ -35,10 +34,8 @@ const ReviewList: React.FC<ReviewListProps> = ({ gameId, gameName }) => {
     setError(null);
 
     try {
-      // Get reviews for the game (this is the most important part)
       const reviewsResponse = await reviewService.getGameReviews(gameId, page, pageSize, sortBy);
       
-      // Handle the API response structure
       const reviewsData = Array.isArray(reviewsResponse.reviews) ? reviewsResponse.reviews : [];
       const totalCountData = reviewsResponse.totalCount || 0;
       
@@ -55,29 +52,25 @@ const ReviewList: React.FC<ReviewListProps> = ({ gameId, gameName }) => {
     } catch (err) {
       console.error('Failed to load reviews:', err);
       setError(err instanceof Error ? err.message : 'Failed to load reviews');
-      // Even if reviews fail, set empty array so UI doesn't break
       if (!append) {
         setReviews([]);
         setTotalCount(0);
       }
     }
 
-    // Get average rating (separate from main reviews, don't let it fail everything)
     try {
       const ratingResponse = await reviewService.getGameAverageRating(gameId);
       setAverageRating(ratingResponse.averageRating);
     } catch (ratingError) {
       console.error('Failed to load average rating:', ratingError);
-      setAverageRating(0); // Default to 0 if can't load
+      setAverageRating(0);
     }
 
-    // Get user's review if logged in (separate from main reviews)
     if (user) {
       try {
         const userReviewResponse = await reviewService.getMyReviewForGame(gameId);
         setUserReview(userReviewResponse);
       } catch (userReviewError) {
-        // User hasn't reviewed this game yet, which is fine
         console.log('User has not reviewed this game yet');
         setUserReview(null);
       }
@@ -89,40 +82,33 @@ const ReviewList: React.FC<ReviewListProps> = ({ gameId, gameName }) => {
     setLoadingMore(false);
   };
 
-  // Load more reviews
   const handleLoadMore = () => {
     if (!loadingMore && hasMoreReviews) {
       loadReviews(currentPage + 1, true);
     }
   };
 
-  // Handle sort change
   const handleSortChange = (newSort: string) => {
     setSortBy(newSort);
     setCurrentPage(1);
     loadReviews(1, false);
   };
 
-  // Handle review submission (create/update)
   const handleReviewSubmitted = () => {
     setShowReviewForm(false);
     setEditingReview(null);
-    loadReviews(1, false); // Reload all reviews
+    loadReviews(1, false);
   };
 
-  // Handle edit review
   const handleEditReview = () => {
     setEditingReview(userReview);
     setShowReviewForm(true);
   };
 
-  // Handle delete review
   const handleDeleteReview = () => {
     setUserReview(null);
-    loadReviews(1, false); // Reload all reviews
+    loadReviews(1, false);
   };
-
-  // Load reviews on component mount or when dependencies change
   useEffect(() => {
     loadReviews(1, false);
   }, [gameId, user, sortBy]);

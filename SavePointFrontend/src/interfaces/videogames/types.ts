@@ -34,7 +34,6 @@ export interface GameSearchParams extends GameFilters {
 }
 
 export interface GameSearchResponse extends PagedResult<GameCardDto> {
-  // Inherits all properties from PagedResult<GameCardDto>
 }
 
 export interface FilterOptions {

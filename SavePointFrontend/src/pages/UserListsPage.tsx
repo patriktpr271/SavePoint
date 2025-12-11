@@ -58,7 +58,7 @@ const UserListsPage: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setLists(data);
-        setTotalPages(1); // My lists endpoint might not be paginated
+        setTotalPages(1);
       } else {
         setError('Failed to fetch your lists');
       }
@@ -191,7 +191,6 @@ const UserListsPage: React.FC = () => {
       });
 
       if (response.ok) {
-        // Refresh the lists to get updated vote counts
         if (showOnlyPublic) {
           fetchPublicLists();
         } else {
@@ -252,8 +251,7 @@ const UserListsPage: React.FC = () => {
       });
 
       if (response.ok) {
-        // Optionally refresh lists or show success message
-        if (!showOnlyPublic) {
+        if (showOnlyPublic) {
           fetchMyLists();
         }
       } else {

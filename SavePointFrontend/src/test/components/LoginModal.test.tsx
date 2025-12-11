@@ -6,7 +6,6 @@ import { AuthProvider } from '../../contexts/AuthContext';
 import { ErrorProvider } from '../../contexts/ErrorContext';
 import LoginModal from '../../components/LoginModal';
 
-// Mock fetch for API calls
 global.fetch = vi.fn();
 
 const renderWithProviders = (component: React.ReactElement) => {
@@ -31,7 +30,6 @@ describe('LoginModal Component', () => {
   it('renders login form when modal is open', () => {
     renderWithProviders(<LoginModal isOpen={true} onClose={mockOnClose} />);
 
-    // Check for form inputs using placeholder or name attributes
     expect(screen.getByPlaceholderText(/email or username/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
@@ -50,7 +48,6 @@ describe('LoginModal Component', () => {
     const loginButton = screen.getByRole('button', { name: /sign in/i });
     await user.click(loginButton);
 
-    // Form should show validation errors or prevent submission
     expect(mockOnClose).not.toHaveBeenCalled();
   });
 
@@ -58,7 +55,6 @@ describe('LoginModal Component', () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginModal isOpen={true} onClose={mockOnClose} />);
 
-    // Look for close button (could be an X or Cancel button)
     const closeButtons = screen.queryAllByRole('button');
     const closeButton = closeButtons.find(btn => 
       btn.textContent?.toLowerCase().includes('close') || 

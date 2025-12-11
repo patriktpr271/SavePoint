@@ -105,7 +105,7 @@ const ListDetailPage: React.FC = () => {
         setShowAddGameModal(false);
         setGameSearchQuery('');
         setSearchResults([]);
-        fetchListDetail(); // Refresh to show the added game
+        fetchListDetail();
       } else {
         setError('Failed to add game to list');
       }
@@ -127,7 +127,7 @@ const ListDetailPage: React.FC = () => {
       });
 
       if (response.ok) {
-        fetchListDetail(); // Refresh to show updated list
+        fetchListDetail();
       } else {
         setError('Failed to remove game from list');
       }
@@ -152,7 +152,7 @@ const ListDetailPage: React.FC = () => {
       });
 
       if (response.ok) {
-        fetchListDetail(); // Refresh to show updated vote counts
+        fetchListDetail();
       } else {
         setError('Failed to vote on list');
       }
@@ -172,7 +172,7 @@ const ListDetailPage: React.FC = () => {
       });
 
       if (response.ok) {
-        fetchListDetail(); // Refresh to show updated vote counts
+        fetchListDetail();
       } else {
         setError('Failed to remove vote');
       }

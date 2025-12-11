@@ -5,7 +5,6 @@ import { ErrorHandler } from './errorHandler';
 const API_BASE_URL = '/api';
 
 export const reviewService = {
-  // Get reviews for a specific game (paginated)
   async getGameReviews(
     gameId: string, 
     pageNumber: number = 1, 
@@ -24,14 +23,12 @@ export const reviewService = {
 
     const result = await response.json();
     
-    // Handle the tuple response structure from backend (Properties are capitalized)
     return {
       reviews: result.Reviews || result.reviews || [],
       totalCount: result.TotalCount || result.totalCount || 0
     };
   },
 
-  // Get average rating for a game
   async getGameAverageRating(gameId: string): Promise<{ gameId: string; averageRating: number }> {
     const response = await ErrorHandler.fetchWithErrorHandling(
       `${API_BASE_URL}/review/game/${gameId}/average`
@@ -40,7 +37,6 @@ export const reviewService = {
     return response.json();
   },
 
-  // Get review count for a game
   async getGameReviewCount(gameId: string): Promise<{ gameId: string; reviewCount: number }> {
     const response = await fetch(
       `${API_BASE_URL}/review/game/${gameId}/count`,
@@ -56,7 +52,6 @@ export const reviewService = {
     return response.json();
   },
 
-  // Get a specific review by ID
   async getReviewById(reviewId: string): Promise<ReviewDto> {
     const response = await fetch(
       `${API_BASE_URL}/review/${reviewId}`,
@@ -72,7 +67,6 @@ export const reviewService = {
     return response.json();
   },
 
-  // Get current user's review for a specific game
   async getMyReviewForGame(gameId: string): Promise<ReviewDto | null> {
     const response = await fetch(
       `${API_BASE_URL}/review/my/game/${gameId}`,
@@ -82,7 +76,7 @@ export const reviewService = {
     );
 
     if (response.status === 404) {
-      return null; // User hasn't reviewed this game yet
+      return null;
     }
 
     if (!response.ok) {
@@ -92,7 +86,6 @@ export const reviewService = {
     return response.json();
   },
 
-  // Get current user's reviews (paginated)
   async getMyReviews(pageNumber: number = 1, pageSize: number = 10): Promise<{ reviews: ReviewDto[]; totalCount: number }> {
     const params = new URLSearchParams({
       pageNumber: pageNumber.toString(),
@@ -112,14 +105,12 @@ export const reviewService = {
 
     const result = await response.json();
     
-    // Handle the tuple response structure from backend (Properties are capitalized)
     return {
       reviews: result.Reviews || result.reviews || [],
       totalCount: result.TotalCount || result.totalCount || 0
     };
   },
 
-  // Create a new review
   async createReview(reviewData: CreateReviewDto): Promise<ReviewDto> {
     const response = await fetch(
       `${API_BASE_URL}/review`,
@@ -141,7 +132,6 @@ export const reviewService = {
     return response.json();
   },
 
-  // Update an existing review
   async updateReview(reviewId: string, reviewData: UpdateReviewDto): Promise<ReviewDto> {
     const response = await fetch(
       `${API_BASE_URL}/review/${reviewId}`,
@@ -163,7 +153,6 @@ export const reviewService = {
     return response.json();
   },
 
-  // Delete a review
   async deleteReview(reviewId: string): Promise<void> {
     const response = await fetch(
       `${API_BASE_URL}/review/${reviewId}`,
@@ -179,7 +168,6 @@ export const reviewService = {
     }
   },
 
-  // Get user review statistics
   async getUserReviewStatistics(userId?: string): Promise<ReviewStatisticsDto> {
     const endpoint = userId 
       ? `${API_BASE_URL}/review/statistics/user/${userId}`

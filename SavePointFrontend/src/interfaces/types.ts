@@ -1,4 +1,3 @@
-// Main DTO that matches backend GameCardDto
 export interface GameCardDto {
   id: string; 
   name: string;
@@ -18,7 +17,7 @@ export interface GameDetailDto extends GameCardDto {
 }
 
 export interface PagedResult<T> {
-  items: T[]; // IList<T> from backend becomes T[] in frontend
+  items: T[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
@@ -55,23 +54,22 @@ export const POPULARITY_TYPES: PopularityType[] = [
   }
 ];
 
-// User List related DTOs
 export interface UserListDto {
-  id: string; // Guid from backend
+  id: string;
   name: string;
   description?: string;
   isPublic: boolean;
   isDefault: boolean;
   defaultListType?: string;
-  createdAt: string; // DateTime serialized as string
-  updatedAt?: string; // DateTime serialized as string
+  createdAt: string;
+  updatedAt?: string;
   userId: string;
   userName?: string;
   gameCount: number;
   upvotes: number;
   downvotes: number;
-  userVote?: boolean; // true = upvote, false = downvote, null = no vote
-  games?: GameCardDto[]; // Only included when includeGames=true
+  userVote?: boolean;
+  games?: GameCardDto[];
 }
 
 export interface CreateUserListDto {
@@ -94,13 +92,11 @@ export interface VoteOnListDto {
   isUpvote: boolean;
 }
 
-// Default list types enum
 export enum DefaultListType {
   WantToPlay = 'WantToPlay',
   Finished = 'Finished'
 }
 
-// Extended User interface to include navigation properties
 export interface UserProfileDto {
   id: string;
   username: string;
@@ -114,29 +110,28 @@ export interface UserProfileDto {
   publicListCount: number;
 }
 
-// Review related DTOs
 export interface ReviewDto {
-  id: string; // Guid from backend
+  id: string;
   userId: string;
   gameId: string;
-  rating: number; // 1-5 integer
+  rating: number;
   content?: string;
-  createdAt: string; // DateTime serialized as string
-  updatedAt: string; // DateTime serialized as string
-  userName?: string; // From navigation property
-  userDisplayName?: string; // From navigation property
-  gameName?: string; // From navigation property
+  createdAt: string;
+  updatedAt: string;
+  userName?: string;
+  userDisplayName?: string;
+  gameName?: string;
 }
 
 export interface CreateReviewDto {
   gameId: string;
-  rating: number; // 1-5 integer, required
-  content?: string; // Optional text content
+  rating: number;
+  content?: string;
 }
 
 export interface UpdateReviewDto {
-  rating: number; // 1-5 integer, required
-  content?: string; // Optional text content
+  rating: number;
+  content?: string;
 }
 
 export interface ReviewStatisticsDto {

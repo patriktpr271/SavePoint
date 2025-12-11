@@ -3,9 +3,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ErrorProvider } from '../contexts/ErrorContext';
 
-/**
- * Custom render function that wraps components with necessary providers
- */
 export const renderWithProviders = (
   ui: React.ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
@@ -23,9 +20,6 @@ export const renderWithProviders = (
   return render(ui, { wrapper: AllProviders, ...options });
 };
 
-/**
- * Mock game data for testing
- */
 export const mockGameCardDto = {
   id: '123e4567-e89b-12d3-a456-426614174000',
   name: 'Test Game',
@@ -35,9 +29,6 @@ export const mockGameCardDto = {
   popularityScore: 100,
 };
 
-/**
- * Mock user list data for testing
- */
 export const mockUserListDto = {
   id: '123e4567-e89b-12d3-a456-426614174001',
   name: 'My Favorites',
@@ -51,9 +42,6 @@ export const mockUserListDto = {
   downvotes: 2,
 };
 
-/**
- * Mock review data for testing
- */
 export const mockReviewDto = {
   id: '123e4567-e89b-12d3-a456-426614174002',
   userId: 'user-123',
@@ -66,9 +54,6 @@ export const mockReviewDto = {
   userDisplayName: 'Test User',
 };
 
-/**
- * Mock paged result for testing
- */
 export const mockPagedResult = <T,>(items: T[]) => ({
   items,
   totalCount: items.length,
@@ -79,11 +64,7 @@ export const mockPagedResult = <T,>(items: T[]) => ({
   hasPreviousPage: false,
 });
 
-/**
- * Wait for async operations to complete
- */
 export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0));
 
-// Re-export everything from testing library
 export * from '@testing-library/react';
 export { default as userEvent } from '@testing-library/user-event';

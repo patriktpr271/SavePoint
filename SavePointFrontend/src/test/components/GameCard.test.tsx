@@ -4,7 +4,6 @@ import { describe, it, expect, vi } from 'vitest';
 import GameCard from '../../components/GameCard';
 import { GameCardDto } from '../../interfaces/types';
 
-// Mock the GameDetailsModal component
 vi.mock('../../components/GameDetailsModal', () => ({
   default: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => (
     isOpen ? (

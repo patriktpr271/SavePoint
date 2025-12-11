@@ -24,19 +24,15 @@ namespace SavePoint.Tests.Mappings
         [Fact]
         public void RegisterDto_To_ApplicationUser_MapsCorrectly()
         {
-            // Arrange
             var registerDto = new RegisterDto
             {
                 UserName = "testuser",
                 Email = "test@example.com",
                 DisplayName = "Test User",
-                Password = "TestPassword123!" // Should be ignored in mapping
+                Password = "TestPassword123!"
             };
 
-            // Act
             var result = _mapper.Map<ApplicationUser>(registerDto);
-
-            // Assert
             result.Should().NotBeNull();
             result.UserName.Should().Be("testuser");
             result.Email.Should().Be("test@example.com");
@@ -47,15 +43,12 @@ namespace SavePoint.Tests.Mappings
             result.LockoutEnabled.Should().BeTrue();
             result.AccessFailedCount.Should().Be(0);
             result.Bio.Should().Be(string.Empty);
-            
-            // AutoMapper might generate values for these fields
             result.Id.Should().NotBeNullOrEmpty();
         }
 
         [Fact]
         public void ApplicationUser_To_UserProfileDto_MapsCorrectly()
         {
-            // Arrange
             var user = new ApplicationUser
             {
                 Id = "test-user-id",
@@ -76,10 +69,8 @@ namespace SavePoint.Tests.Mappings
                 }
             };
 
-            // Act
             var result = _mapper.Map<SavePoint.BusinessLogic.Mappings.UserProfileDto>(user);
 
-            // Assert
             result.Should().NotBeNull();
             result.Id.Should().Be("test-user-id");
             result.UserName.Should().Be("testuser");
@@ -93,7 +84,6 @@ namespace SavePoint.Tests.Mappings
         [Fact]
         public void RegisterDto_To_ApplicationUser_WithMinimalData_MapsCorrectly()
         {
-            // Arrange
             var registerDto = new RegisterDto
             {
                 UserName = "testuser",
@@ -102,10 +92,8 @@ namespace SavePoint.Tests.Mappings
                 Password = "TestPassword123!"
             };
 
-            // Act
             var result = _mapper.Map<ApplicationUser>(registerDto);
 
-            // Assert
             result.Should().NotBeNull();
             result.UserName.Should().Be("testuser");
             result.Email.Should().Be("test@example.com");
@@ -115,7 +103,6 @@ namespace SavePoint.Tests.Mappings
         [Fact]
         public void ApplicationUser_To_UserProfileDto_WithEmptyCollections_ReturnsZeroCounts()
         {
-            // Arrange
             var user = new ApplicationUser
             {
                 Id = "test-user-id",
@@ -123,14 +110,11 @@ namespace SavePoint.Tests.Mappings
                 Email = "test@example.com",
                 DisplayName = "Test User",
                 Bio = "",
-                Reviews = new List<Review>(), // Empty collection
-                UserLists = new List<UserList>() // Empty collection
+                Reviews = new List<Review>(),
+                UserLists = new List<UserList>()
             };
 
-            // Act
             var result = _mapper.Map<SavePoint.BusinessLogic.Mappings.UserProfileDto>(user);
-
-            // Assert
             result.Should().NotBeNull();
             result.ReviewCount.Should().Be(0);
             result.ListCount.Should().Be(0);
@@ -139,10 +123,8 @@ namespace SavePoint.Tests.Mappings
         [Fact]
         public void UserMappingProfile_CanBeInstantiated()
         {
-            // Arrange & Act
             var profile = new UserMappingProfile();
 
-            // Assert
             profile.Should().NotBeNull();
         }
     }

@@ -19,7 +19,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task RegisterAsync_WithValidData_CreatesUserAndDefaultLists()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -38,28 +37,23 @@ namespace SavePoint.IntegrationTests.Services
                 DisplayName = "Integration Test User"
             };
 
-            // Act
             var result = await userService.RegisterAsync(registerDto);
 
-            // Assert
             result.Should().NotBeNull();
             result.Succeeded.Should().BeTrue();
 
-            // Verify user was created in database
             var createdUser = await userManager.FindByEmailAsync(registerDto.Email);
             createdUser.Should().NotBeNull();
             createdUser!.UserName.Should().Be(registerDto.UserName);
             createdUser.Email.Should().Be(registerDto.Email);
             createdUser.DisplayName.Should().Be(registerDto.DisplayName);
 
-            // Verify default lists creation was called
             mockUserListService.Verify(x => x.CreateDefaultListsForUserAsync(createdUser.Id), Times.Once);
         }
 
         [Fact]
         public async Task RegisterAsync_WithDuplicateEmail_ReturnsFailure()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -84,11 +78,9 @@ namespace SavePoint.IntegrationTests.Services
                 DisplayName = "Second User"
             };
 
-            // Act
             var firstResult = await userService.RegisterAsync(firstUserDto);
             var secondResult = await userService.RegisterAsync(secondUserDto);
 
-            // Assert
             firstResult.Succeeded.Should().BeTrue();
             secondResult.Succeeded.Should().BeFalse();
             secondResult.Errors.Should().NotBeEmpty();
@@ -97,7 +89,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task ValidateUserAsync_WithValidCredentials_ReturnsSuccess()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -105,7 +96,6 @@ namespace SavePoint.IntegrationTests.Services
 
             var userService = new UserService(userManager, mapper, mockUserListService.Object);
 
-            // First create a user
             var registerDto = new RegisterDto
             {
                 UserName = "validationuser",
@@ -135,7 +125,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task ValidateUserAsync_WithInvalidPassword_ReturnsFailure()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -143,7 +132,6 @@ namespace SavePoint.IntegrationTests.Services
 
             var userService = new UserService(userManager, mapper, mockUserListService.Object);
 
-            // First create a user
             var registerDto = new RegisterDto
             {
                 UserName = "invalidpassuser",
@@ -157,13 +145,11 @@ namespace SavePoint.IntegrationTests.Services
             var loginDto = new LoginDto
             {
                 EmailOrUsername = "invalidpass@test.com",
-                Password = "WrongPassword!" // Wrong password
+                Password = "WrongPassword!"
             };
 
-            // Act
             var result = await userService.ValidateUserAsync(loginDto);
 
-            // Assert
             result.Success.Should().BeFalse();
             result.User.Should().BeNull();
         }
@@ -171,7 +157,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task ValidateUserAsync_WithUsername_ReturnsSuccess()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -179,7 +164,6 @@ namespace SavePoint.IntegrationTests.Services
 
             var userService = new UserService(userManager, mapper, mockUserListService.Object);
 
-            // First create a user
             var registerDto = new RegisterDto
             {
                 UserName = "usernamelogintest",
@@ -192,14 +176,12 @@ namespace SavePoint.IntegrationTests.Services
 
             var loginDto = new LoginDto
             {
-                EmailOrUsername = "usernamelogintest", // Use username instead of email
+                EmailOrUsername = "usernamelogintest",
                 Password = "TestPassword123!"
             };
 
-            // Act
             var result = await userService.ValidateUserAsync(loginDto);
 
-            // Assert
             result.Success.Should().BeTrue();
             result.User.Should().NotBeNull();
             result.User!.UserName.Should().Be(registerDto.UserName);
@@ -208,7 +190,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task GetUserByIdAsync_WithValidId_ReturnsUser()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -216,7 +197,6 @@ namespace SavePoint.IntegrationTests.Services
 
             var userService = new UserService(userManager, mapper, mockUserListService.Object);
 
-            // First create a user
             var registerDto = new RegisterDto
             {
                 UserName = "getuserbyid",
@@ -228,10 +208,8 @@ namespace SavePoint.IntegrationTests.Services
             await userService.RegisterAsync(registerDto);
             var createdUser = await userManager.FindByEmailAsync(registerDto.Email);
 
-            // Act
             var result = await userService.GetUserByIdAsync(createdUser!.Id);
 
-            // Assert
             result.Should().NotBeNull();
             result!.Id.Should().Be(createdUser.Id);
             result.Email.Should().Be(registerDto.Email);
@@ -241,7 +219,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task GetUserByEmailAsync_WithValidEmail_ReturnsUser()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -249,7 +226,6 @@ namespace SavePoint.IntegrationTests.Services
 
             var userService = new UserService(userManager, mapper, mockUserListService.Object);
 
-            // First create a user
             var registerDto = new RegisterDto
             {
                 UserName = "getuserbyemail",
@@ -260,10 +236,8 @@ namespace SavePoint.IntegrationTests.Services
 
             await userService.RegisterAsync(registerDto);
 
-            // Act
             var result = await userService.GetUserByEmailAsync(registerDto.Email);
 
-            // Assert
             result.Should().NotBeNull();
             result!.Email.Should().Be(registerDto.Email);
             result.UserName.Should().Be(registerDto.UserName);
@@ -273,7 +247,6 @@ namespace SavePoint.IntegrationTests.Services
         [Fact]
         public async Task RegisterAsync_WithWeakPassword_ReturnsFailure()
         {
-            // Arrange
             using var scope = _factory.Services.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -285,18 +258,15 @@ namespace SavePoint.IntegrationTests.Services
             {
                 UserName = "weakpassuser",
                 Email = "weakpass@test.com",
-                Password = "123", // Too weak
+                Password = "123",
                 DisplayName = "Weak Password User"
             };
 
-            // Act
             var result = await userService.RegisterAsync(registerDto);
 
-            // Assert
             result.Succeeded.Should().BeFalse();
             result.Errors.Should().NotBeEmpty();
             
-            // Should contain password-related errors
             var errorDescriptions = result.Errors.Select(e => e.Description).ToList();
             errorDescriptions.Should().Contain(desc => desc.ToLower().Contains("password"));
         }

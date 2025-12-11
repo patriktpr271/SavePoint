@@ -20,13 +20,10 @@ namespace SavePoint.IntegrationTests.Fixtures
 
         public WebApplicationFixture()
         {
-            // Use SQLite in-memory on Linux (CI), LocalDB on Windows (local dev)
             _useInMemoryDatabase = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
             
             if (_useInMemoryDatabase)
             {
-                // Create a persistent in-memory SQLite connection
-                // This connection must stay open for the lifetime of the tests
                 _sqliteConnection = new SqliteConnection("DataSource=:memory:");
                 _sqliteConnection.Open();
             }
@@ -42,7 +39,6 @@ namespace SavePoint.IntegrationTests.Fixtures
             {
                 if (!_useInMemoryDatabase && _connectionString != null)
                 {
-                    // Load test configuration for LocalDB
                     config.AddJsonFile("appsettings.Test.json", optional: false)
                           .AddInMemoryCollection(new Dictionary<string, string?>
                           {
@@ -51,14 +47,12 @@ namespace SavePoint.IntegrationTests.Fixtures
                 }
                 else
                 {
-                    // Load test configuration for SQLite
                     config.AddJsonFile("appsettings.Test.json", optional: false);
                 }
             });
 
             builder.ConfigureServices(services =>
             {
-                // Remove the existing DbContext registration
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
                 if (descriptor != null)
                 {
@@ -77,12 +71,10 @@ namespace SavePoint.IntegrationTests.Fixtures
                     services.Remove(service);
                 }
 
-                // Add test database - SQLite in-memory on Linux, LocalDB on Windows
                 if (_useInMemoryDatabase)
                 {
                     services.AddDbContext<ApplicationDbContext>(options =>
                     {
-                        // Use the persistent SQLite connection
                         options.UseSqlite(_sqliteConnection!);
                     });
                 }
@@ -94,7 +86,6 @@ namespace SavePoint.IntegrationTests.Fixtures
                     });
                 }
 
-                // Ensure database is created and seeded
                 var serviceProvider = services.BuildServiceProvider();
                 using var scope = serviceProvider.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -107,9 +98,8 @@ namespace SavePoint.IntegrationTests.Fixtures
 
         private static void SeedTestData(ApplicationDbContext context)
         {
-            if (context.Games.Any()) return; // Already seeded
+            if (context.Games.Any()) return;
 
-            // Create test genres
             var genres = new List<Genre>
             {
                 new Genre { Id = Guid.NewGuid(), Name = "Action", ExternalId = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
@@ -118,7 +108,6 @@ namespace SavePoint.IntegrationTests.Fixtures
             };
             context.Genres.AddRange(genres);
 
-            // Create test platforms
             var platforms = new List<Platform>
             {
                 new Platform { Id = Guid.NewGuid(), Name = "PC", Abbreviation = "PC", ExternalId = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
@@ -127,7 +116,6 @@ namespace SavePoint.IntegrationTests.Fixtures
             };
             context.Platforms.AddRange(platforms);
 
-            // Create test companies
             var companies = new List<Company>
             {
                 new Company { Id = Guid.NewGuid(), Name = "Test Studios", ExternalId = 1, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
@@ -135,7 +123,6 @@ namespace SavePoint.IntegrationTests.Fixtures
             };
             context.Companies.AddRange(companies);
 
-            // Create test games using Bogus
             var faker = new Faker<Game>()
                 .RuleFor(g => g.Id, f => Guid.NewGuid())
                 .RuleFor(g => g.Name, f => f.Commerce.ProductName())
@@ -152,10 +139,8 @@ namespace SavePoint.IntegrationTests.Fixtures
 
             context.SaveChanges();
 
-            // Create game relationships
             foreach (var game in games.Take(5))
             {
-                // Add some genres to games
                 var gameGenre = new GameGenre
                 {
                     Id = Guid.NewGuid(),
@@ -166,7 +151,6 @@ namespace SavePoint.IntegrationTests.Fixtures
                 };
                 context.GameGenres.Add(gameGenre);
 
-                // Add some platforms to games
                 var gamePlatform = new GamePlatform
                 {
                     Id = Guid.NewGuid(),
@@ -177,7 +161,6 @@ namespace SavePoint.IntegrationTests.Fixtures
                 };
                 context.GamePlatforms.Add(gamePlatform);
 
-                // Add popularity scores for different popularity types
                 for (int popularityType = 1; popularityType <= 3; popularityType++)
                 {
                     var popularity = new Popularity
@@ -204,13 +187,11 @@ namespace SavePoint.IntegrationTests.Fixtures
                 {
                     if (_useInMemoryDatabase)
                     {
-                        // Close and dispose the SQLite connection
                         _sqliteConnection?.Close();
                         _sqliteConnection?.Dispose();
                     }
                     else
                     {
-                        // Clean up the LocalDB database
                         using var scope = Services.CreateScope();
                         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                         context.Database.EnsureDeleted();
@@ -218,7 +199,6 @@ namespace SavePoint.IntegrationTests.Fixtures
                 }
                 catch
                 {
-                    // Ignore cleanup errors during disposal
                 }
             }
             base.Dispose(disposing);

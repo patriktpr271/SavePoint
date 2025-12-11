@@ -2,9 +2,6 @@ import { useCallback } from 'react';
 import { useError } from '../contexts/ErrorContext';
 import { ErrorHandler, AppError } from '../services/errorHandler';
 
-/**
- * Hook for handling asynchronous operations with automatic error handling
- */
 export const useAsyncOperation = () => {
   const { showError, setLoading, setRetry } = useError();
 
@@ -66,9 +63,6 @@ export const useAsyncOperation = () => {
   return { executeAsync };
 };
 
-/**
- * Hook for API calls with enhanced error handling
- */
 export const useApiCall = () => {
   const { executeAsync } = useAsyncOperation();
 
@@ -100,9 +94,6 @@ export const useApiCall = () => {
   return { apiCall };
 };
 
-/**
- * Hook for form submission with validation error handling
- */
 export const useFormSubmission = () => {
   const { executeAsync } = useAsyncOperation();
 
@@ -125,7 +116,7 @@ export const useFormSubmission = () => {
           options.onError(error);
         }
       },
-      retryable: false // Forms usually shouldn't auto-retry
+      retryable: false
     });
   }, [executeAsync]);
 

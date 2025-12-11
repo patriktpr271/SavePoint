@@ -9,13 +9,10 @@ namespace SavePoint.Tests.Exceptions
         [Fact]
         public void Constructor_WithMessage_SetsMessageCorrectly()
         {
-            // Arrange
             var message = "Test conflict message";
 
-            // Act
             var exception = new ConflictException(message);
 
-            // Assert
             exception.Message.Should().Be(message);
             exception.StatusCode.Should().Be(HttpStatusCode.Conflict);
             exception.ErrorCode.Should().Be("RESOURCE_CONFLICT");
@@ -24,15 +21,12 @@ namespace SavePoint.Tests.Exceptions
         [Fact]
         public void Constructor_WithResourceTypeAndConflictField_FormatsMessageCorrectly()
         {
-            // Arrange
             var resourceType = "User";
             var conflictField = "email";
             var conflictValue = "test@example.com";
 
-            // Act
             var exception = new ConflictException(resourceType, conflictField, conflictValue);
 
-            // Assert
             exception.Message.Should().Be("User with email 'test@example.com' already exists");
             exception.StatusCode.Should().Be(HttpStatusCode.Conflict);
             exception.ErrorCode.Should().Be("RESOURCE_CONFLICT");
@@ -44,13 +38,10 @@ namespace SavePoint.Tests.Exceptions
         [Fact]
         public void DuplicateEmail_CreatesCorrectException()
         {
-            // Arrange
             var email = "test@example.com";
 
-            // Act
             var exception = ConflictException.DuplicateEmail(email);
 
-            // Assert
             exception.Message.Should().Be("User with email 'test@example.com' already exists");
             exception.StatusCode.Should().Be(HttpStatusCode.Conflict);
             exception.ErrorCode.Should().Be("RESOURCE_CONFLICT");
@@ -61,13 +52,10 @@ namespace SavePoint.Tests.Exceptions
         [Fact]
         public void DuplicateUsername_CreatesCorrectException()
         {
-            // Arrange
             var username = "testuser";
 
-            // Act
             var exception = ConflictException.DuplicateUsername(username);
 
-            // Assert
             exception.Message.Should().Be("User with username 'testuser' already exists");
             exception.StatusCode.Should().Be(HttpStatusCode.Conflict);
             exception.ErrorCode.Should().Be("RESOURCE_CONFLICT");
@@ -78,14 +66,11 @@ namespace SavePoint.Tests.Exceptions
         [Fact]
         public void DuplicateReview_CreatesCorrectException()
         {
-            // Arrange
             var gameId = Guid.NewGuid();
             var userId = "test-user-id";
 
-            // Act
             var exception = ConflictException.DuplicateReview(gameId, userId);
 
-            // Assert
             exception.Message.Should().Be("Review for this game already exists");
             exception.StatusCode.Should().Be(HttpStatusCode.Conflict);
             exception.ErrorCode.Should().Be("RESOURCE_CONFLICT");

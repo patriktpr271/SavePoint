@@ -1,4 +1,3 @@
-// Error response types that match backend API responses
 export interface ApiErrorResponse {
   message: string;
   errorCode: string;
@@ -14,7 +13,6 @@ export interface ValidationErrorResponse extends ApiErrorResponse {
   validationErrors: Record<string, string[]>;
 }
 
-// Error types for different scenarios
 export enum ErrorType {
   VALIDATION = 'VALIDATION_ERROR',
   NOT_FOUND = 'RESOURCE_NOT_FOUND',
@@ -27,7 +25,6 @@ export enum ErrorType {
   UNKNOWN = 'UNKNOWN_ERROR'
 }
 
-// Custom error class for application errors
 export class AppError extends Error {
   public readonly type: ErrorType;
   public readonly statusCode: number;
@@ -61,18 +58,13 @@ export class AppError extends Error {
   }
 }
 
-// Error handler utility class
 export class ErrorHandler {
-  /**
-   * Parse and handle API errors from fetch responses
-   */
   static async handleApiError(response: Response): Promise<never> {
     let errorData: ApiErrorResponse;
 
     try {
       errorData = await response.json();
     } catch {
-      // If we can't parse JSON, create a generic error
       errorData = {
         message: 'An unexpected error occurred',
         errorCode: ErrorType.UNKNOWN,
@@ -84,9 +76,6 @@ export class ErrorHandler {
     throw AppError.fromApiResponse(errorData);
   }
 
-  /**
-   * Get user-friendly error message based on error type
-   */
   static getUserFriendlyMessage(error: AppError): string {
     switch (error.type) {
       case ErrorType.VALIDATION:
@@ -100,7 +89,7 @@ export class ErrorHandler {
       case ErrorType.CONFLICT:
         return 'This action conflicts with existing data.';
       case ErrorType.BUSINESS_RULE:
-        return error.message; // Business rules usually have descriptive messages
+        return error.message;
       case ErrorType.NETWORK:
         return 'Network error. Please check your connection and try again.';
       case ErrorType.TIMEOUT:
@@ -110,9 +99,6 @@ export class ErrorHandler {
     }
   }
 
-  /**
-   * Extract validation errors from ValidationErrorResponse
-   */
   static getValidationErrors(error: AppError): Record<string, string[]> | null {
     if (error.type === ErrorType.VALIDATION && error.details?.validationErrors) {
       return error.details.validationErrors;
@@ -120,9 +106,6 @@ export class ErrorHandler {
     return null;
   }
 
-  /**
-   * Check if error is retryable
-   */
   static isRetryable(error: AppError): boolean {
     return [
       ErrorType.NETWORK,
@@ -131,9 +114,6 @@ export class ErrorHandler {
     ].includes(error.type) && error.statusCode >= 500;
   }
 
-  /**
-   * Enhanced fetch wrapper with error handling
-   */
   static async fetchWithErrorHandling(
     url: string, 
     options: RequestInit = {}
@@ -158,7 +138,6 @@ export class ErrorHandler {
         throw error;
       }
 
-      // Handle network errors
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new AppError(
           'Network error. Please check your connection.',
@@ -167,7 +146,6 @@ export class ErrorHandler {
         );
       }
 
-      // Handle timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
         throw new AppError(
           'Request timed out.',
@@ -176,7 +154,6 @@ export class ErrorHandler {
         );
       }
 
-      // Handle unknown errors
       throw new AppError(
         error instanceof Error ? error.message : 'Unknown error occurred',
         ErrorType.UNKNOWN,
@@ -185,9 +162,6 @@ export class ErrorHandler {
     }
   }
 
-  /**
-   * Log error for debugging (in development) or error reporting (in production)
-   */
   static logError(error: AppError, context?: string): void {
     const logData = {
       message: error.message,
@@ -199,10 +173,6 @@ export class ErrorHandler {
       stack: error.stack
     };
 
-    // Always log errors, but you might want to differentiate in production
     console.error('[ErrorHandler]', logData);
-    
-    // In production, you might want to send this to an error reporting service
-    // like Sentry, LogRocket, etc.
   }
 }
