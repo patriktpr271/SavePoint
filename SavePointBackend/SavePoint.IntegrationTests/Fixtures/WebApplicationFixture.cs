@@ -65,8 +65,6 @@ namespace SavePoint.IntegrationTests.Fixtures
                     services.Remove(descriptor);
                 }
 
-                // Remove Hangfire completely from tests to prevent background processes
-                // Remove ALL Hangfire-related services (configuration, storage, background processes, hosted services)
                 var hangfireServices = services
                     .Where(d => d.ServiceType.Namespace?.StartsWith("Hangfire") == true ||
                                d.ImplementationType?.Namespace?.StartsWith("Hangfire") == true ||
@@ -78,9 +76,6 @@ namespace SavePoint.IntegrationTests.Fixtures
                 {
                     services.Remove(service);
                 }
-
-                // Don't re-add Hangfire - completely remove it from tests to prevent background processes
-                // Tests don't need background job processing
 
                 // Add test database - SQLite in-memory on Linux, LocalDB on Windows
                 if (_useInMemoryDatabase)

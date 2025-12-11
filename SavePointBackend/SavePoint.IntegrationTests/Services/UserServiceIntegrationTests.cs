@@ -79,7 +79,7 @@ namespace SavePoint.IntegrationTests.Services
             var secondUserDto = new RegisterDto
             {
                 UserName = "seconduser",
-                Email = email, // Same email
+                Email = email, 
                 Password = "TestPassword123!",
                 DisplayName = "Second User"
             };

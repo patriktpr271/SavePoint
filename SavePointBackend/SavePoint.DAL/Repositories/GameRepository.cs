@@ -96,8 +96,8 @@ namespace SavePoint.DAL.Repositories
 							 .ThenInclude(gg => gg.Genre);
 			}
 
-			// Apply sorting
-			query = ApplySorting(query, sortBy, sortOrder);
+		// Apply sorting
+		query = ApplySorting(query, sortBy, sortOrder);
 
 			var totalCount = await query.CountAsync();
 
@@ -308,9 +308,10 @@ namespace SavePoint.DAL.Repositories
 			.Where(g => g.Popularities.Any(p => p.PopularityType == popularityType))
 			.OrderByDescending(g => g.Popularities
 				.Where(p => p.PopularityType == popularityType)
-				.Max(p => (double)p.PopularityScore)); // Cast to double for SQLite compatibility
+				.Max(p => (double)p.PopularityScore));
 
-					var totalCount = await query.CountAsync();						var items = await query
+					var totalCount = await query.CountAsync();
+					var items = await query
 							.Skip((pageNumber - 1) * pageSize)
 							.Take(pageSize)
 							.ToListAsync();

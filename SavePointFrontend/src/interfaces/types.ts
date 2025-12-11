@@ -1,20 +1,20 @@
 // Main DTO that matches backend GameCardDto
 export interface GameCardDto {
-  id: string; // Guid from backend
+  id: string; 
   name: string;
   coverUrl?: string;
-  rating: number; // double from backend
-  releaseDate: string; // DateTime serialized as string
-  popularityScore?: number; // decimal? from backend
+  rating: number; 
+  releaseDate: string; 
+  popularityScore?: number; 
 }
 
 export interface GameDetailDto extends GameCardDto {
   summary?: string;
   reviewCount: number;
   averageUserRating: number;
-  genres: Array<{ id: string; name: string }>;     // Changed from gameGenres
-  platforms: Array<{ id: string; name: string }>;  // Changed from gamePlatforms  
-  companies: Array<{ id: string; name: string; role: string }>; // Changed from gameCompanies
+  genres: Array<{ id: string; name: string }>;   
+  platforms: Array<{ id: string; name: string }>; 
+  companies: Array<{ id: string; name: string; role: string }>; 
 }
 
 export interface PagedResult<T> {

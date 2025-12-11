@@ -38,7 +38,6 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
 
   if (!isOpen) return null;
 
-  // Use gameDetails if available, otherwise fall back to basic game data
   const displayGame = gameDetails || {
     ...game,
     reviewCount: 0,
@@ -173,7 +172,7 @@ const GameDetailsModal: React.FC<GameDetailsModalProps> = ({ game, isOpen, onClo
               </div>
             </div>
 
-            {/* Reviews Section - positioned under the game details */}
+            {/* Reviews Section */}
             <div className="mt-8">
               <ReviewList key={`reviews-${game.id}`} gameId={game.id} gameName={displayGame.name} />
             </div>

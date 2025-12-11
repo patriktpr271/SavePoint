@@ -66,13 +66,10 @@ namespace SavePoint.Host.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Find user by email or username
             ApplicationUser? user = null;
             
-            // First try to find by email
             user = await _userManager.FindByEmailAsync(dto.EmailOrUsername);
             
-            // If not found by email, try to find by username
             if (user == null)
             {
                 user = await _userManager.FindByNameAsync(dto.EmailOrUsername);
@@ -83,7 +80,6 @@ namespace SavePoint.Host.Controllers
                 return BadRequest(new { message = "Invalid email/username or password" });
             }
 
-            // Use the found user's UserName for sign-in
             var result = await _signInManager.PasswordSignInAsync(user.UserName!, dto.Password, dto.RememberMe, lockoutOnFailure: false);
             
             if (result.Succeeded)
