@@ -11,6 +11,13 @@ spec:
     - host: savepoint.local
       http:
         paths:
+          - path: /api/review
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-reviews
+                port:
+                  number: 8080
           - path: /api
             pathType: Prefix
             backend:

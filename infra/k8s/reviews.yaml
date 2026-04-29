@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: savepoint-backend
+  name: savepoint-reviews
   namespace: savepoint
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: savepoint-backend
+      app: savepoint-reviews
   template:
     metadata:
       labels:
-        app: savepoint-backend
+        app: savepoint-reviews
     spec:
       volumes:
         - name: dataprotection-keys
           persistentVolumeClaim:
             claimName: dataprotection-pvc
       containers:
-        - name: backend
-          image: savepoint-backend:phase2
+        - name: reviews
+          image: savepoint-reviews:phase2
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: dataprotection-keys
@@ -52,11 +52,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: savepoint-backend
+  name: savepoint-reviews
   namespace: savepoint
 spec:
   selector:
-    app: savepoint-backend
+    app: savepoint-reviews
   ports:
     - name: http
       port: 8080

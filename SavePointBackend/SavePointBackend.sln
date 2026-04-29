@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.DAL", "SavePoint.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.Common", "SavePoint.Common\SavePoint.Common.csproj", "{8BC3A04F-BBFC-452A-9820-6FA89C9921B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4C-00C04F79EFBC}") = "SavePoint.ReviewsService", "SavePoint.ReviewsService\SavePoint.ReviewsService.csproj", "{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{8BC3A04F-BBFC-452A-9820-6FA89C9921B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8BC3A04F-BBFC-452A-9820-6FA89C9921B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8BC3A04F-BBFC-452A-9820-6FA89C9921B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

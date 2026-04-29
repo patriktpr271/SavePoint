@@ -3,7 +3,9 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secret.yaml
+  - dataprotection-pvc.yaml
   - db.yaml
+  - reviews.yaml
   - backend.yaml
   - frontend.yaml
   - ingress.yaml

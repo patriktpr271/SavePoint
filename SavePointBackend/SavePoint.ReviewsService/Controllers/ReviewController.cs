@@ -6,7 +6,7 @@ using SavePoint.Common.Dtos.Reviews;
 using SavePoint.Common.Exceptions;
 using SavePoint.Entities.Users;
 
-namespace SavePoint.Host.Controllers
+namespace SavePoint.ReviewsService.Controllers
 {
 	[ApiController]
 	[Route("api/[controller]")]
@@ -46,9 +46,7 @@ namespace SavePoint.Host.Controllers
 			if (pageSize < 1 || pageSize > 50) pageSize = 20;
 
 			var result = await _reviewService.GetPagedAsync(pageNumber, pageSize, gameId);
-			
-			// Return as an anonymous object instead of tuple for proper JSON serialization
-			return Ok(new 
+			return Ok(new
 			{
 				Reviews = result.Reviews,
 				TotalCount = result.TotalCount
@@ -90,9 +88,7 @@ namespace SavePoint.Host.Controllers
 			if (pageSize < 1 || pageSize > 50) pageSize = 20;
 
 			var result = await _reviewService.GetPagedAsync(pageNumber, pageSize, null, userId);
-			
-			// Return as an anonymous object instead of tuple for proper JSON serialization
-			return Ok(new 
+			return Ok(new
 			{
 				Reviews = result.Reviews,
 				TotalCount = result.TotalCount
@@ -111,9 +107,7 @@ namespace SavePoint.Host.Controllers
 			if (pageSize < 1 || pageSize > 50) pageSize = 20;
 
 			var result = await _reviewService.GetPagedAsync(pageNumber, pageSize, null, currentUserId);
-			
-			// Return as an anonymous object instead of tuple for proper JSON serialization
-			return Ok(new 
+			return Ok(new
 			{
 				Reviews = result.Reviews,
 				TotalCount = result.TotalCount
