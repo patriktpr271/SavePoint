@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: savepoint-db
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong!Passw0rd"
+    ports:
+      - "1433:1433"
+    volumes:
+      - savepoint_db_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "cat /var/opt/mssql/log/errorlog | grep -q 'SQL Server is now ready for client connections'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./SavePointBackend
+      dockerfile: Dockerfile
+    container_name: savepoint-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=SavePoint;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;Encrypt=False"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./SavePointFrontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    container_name: savepoint-frontend
+    depends_on:
+      - backend
+    ports:
+      - "4173:4173"
+
+volumes:
+  savepoint_db_data:

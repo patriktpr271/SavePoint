@@ -13,7 +13,10 @@ namespace SavePoint.Host.Configuration
                         "http://localhost:5173", 
                         "https://localhost:5173",
                         "https://localhost:7198",
-                        "https://savepoint-gameaabaccb473.switzerlandnorth-01.azurewebsites.net"
+                        "http://localhost:4173",
+                        "https://localhost:4173",
+                        "http://savepoint.local",
+                        "https://savepoint.local"
                     };
 
                     // Add Azure Web App URL from configuration if available

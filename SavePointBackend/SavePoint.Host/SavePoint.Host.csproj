@@ -8,6 +8,11 @@
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
   </PropertyGroup>
 
+  <!-- Allow turning off frontend build in Docker publish -->
+  <PropertyGroup>
+    <DisableFrontendBuild Condition="'$(DisableFrontendBuild)' == ''">false</DisableFrontendBuild>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.21" />
     <PackageReference Include="Hangfire.Core" Version="1.8.21" />
@@ -34,16 +39,21 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
 
-  <Target Name="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish">
-    <Message Text="Building frontend for Azure deployment..." Importance="high" />
+  <Target Name="BuildFrontendForPublish"
+          BeforeTargets="ComputeFilesToPublish"
+          Condition="'$(DisableFrontendBuild)' != 'true' and Exists('$(SpaRoot)package.json')">
+    <Message Text="Building frontend for publish..." Importance="high" />
     <Exec Command="npm ci" WorkingDirectory="$(SpaRoot)" Condition="Exists('$(SpaRoot)package-lock.json')" />
     <Exec Command="npm install" WorkingDirectory="$(SpaRoot)" Condition="!Exists('$(SpaRoot)package-lock.json')" />
     <Exec Command="npm run build" WorkingDirectory="$(SpaRoot)" />
   </Target>
-  <Target Name="IncludeFrontendInPublish" AfterTargets="BuildFrontendForPublish" BeforeTargets="ComputeFilesToPublish">
-    <Message Text="Including frontend files in Azure deployment..." Importance="high" />
-    
-    <ItemGroup Condition="Exists('$(SpaRoot)dist')">
+
+  <Target Name="IncludeFrontendInPublish"
+          AfterTargets="BuildFrontendForPublish"
+          BeforeTargets="ComputeFilesToPublish"
+          Condition="'$(DisableFrontendBuild)' != 'true' and Exists('$(SpaRoot)dist')">
+    <Message Text="Including frontend files in publish output..." Importance="high" />
+    <ItemGroup>
       <_FrontendFiles Include="$(SpaRoot)dist\**\*" />
       <ResolvedFileToPublish Include="@(_FrontendFiles)" Condition="'%(_FrontendFiles.Extension)' != ''">
         <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
@@ -54,9 +64,11 @@
   </Target>
 
   <!-- Clean frontend on clean -->
-  <Target Name="CleanFrontend" AfterTargets="Clean">
+  <Target Name="CleanFrontend"
+          AfterTargets="Clean"
+          Condition="'$(DisableFrontendBuild)' != 'true' and Exists('$(SpaRoot)dist')">
     <Message Text="Cleaning frontend build output..." Importance="high" />
-    <RemoveDir Directories="$(SpaRoot)dist" Condition="Exists('$(SpaRoot)dist')" />
+    <RemoveDir Directories="$(SpaRoot)dist" />
   </Target>
 
 </Project>

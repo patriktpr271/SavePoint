@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: savepoint-ingress
+  namespace: savepoint
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: savepoint.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-backend
+                port:
+                  number: 8080
+          - path: /hangfire
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-frontend
+                port:
+                  number: 4173

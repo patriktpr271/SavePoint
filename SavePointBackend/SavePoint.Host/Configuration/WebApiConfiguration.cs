@@ -57,6 +57,7 @@ namespace SavePoint.Host.Configuration
                 // Serve static files from wwwroot (for frontend in production)
                 app.UseDefaultFiles();
                 app.UseStaticFiles();
+                app.UseHttpsRedirection();
             }
 
             // Authentication & Authorization middleware (order is important!)
