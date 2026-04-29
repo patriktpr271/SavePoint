@@ -25,6 +25,13 @@ spec:
                 name: savepoint-backend
                 port:
                   number: 8080
+          - path: /api/lookup
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-lookup
+                port:
+                  number: 8080
           - path: /hangfire
             pathType: Prefix
             backend:

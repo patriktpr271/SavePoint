@@ -5,6 +5,7 @@ resources:
   - secret.yaml
   - dataprotection-pvc.yaml
   - db.yaml
+  - lookup.yaml
   - reviews.yaml
   - backend.yaml
   - frontend.yaml
