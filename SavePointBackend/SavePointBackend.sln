@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36429.23 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11716.220 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.Host", "SavePoint.Host\SavePoint.Host.csproj", "{720A9F9C-11E3-480C-B5DA-A6DA0E73E474}"
 EndProject
@@ -13,9 +13,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.DAL", "SavePoint.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.Common", "SavePoint.Common\SavePoint.Common.csproj", "{8BC3A04F-BBFC-452A-9820-6FA89C9921B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4C-00C04F79EFBC}") = "SavePoint.ReviewsService", "SavePoint.ReviewsService\SavePoint.ReviewsService.csproj", "{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.ReviewsService", "SavePoint.ReviewsService\SavePoint.ReviewsService.csproj", "{B7C15B91-7B32-44A7-82A7-0E3A9E6D5E55}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.LookupService", "SavePoint.LookupService\SavePoint.LookupService.csproj", "{C3D5A2E1-1234-4A8B-9CDE-ABCDEF123456}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SavePoint.BusinessLogic.Tests", "SavePoint.BusinessLogic.Tests\SavePoint.BusinessLogic.Tests.csproj", "{417DC67C-1BDB-BFE3-D9A6-76F27DEC2E56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{C3D5A2E1-1234-4A8B-9CDE-ABCDEF123456}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3D5A2E1-1234-4A8B-9CDE-ABCDEF123456}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3D5A2E1-1234-4A8B-9CDE-ABCDEF123456}.Release|Any CPU.Build.0 = Release|Any CPU
+		{417DC67C-1BDB-BFE3-D9A6-76F27DEC2E56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{417DC67C-1BDB-BFE3-D9A6-76F27DEC2E56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{417DC67C-1BDB-BFE3-D9A6-76F27DEC2E56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{417DC67C-1BDB-BFE3-D9A6-76F27DEC2E56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
