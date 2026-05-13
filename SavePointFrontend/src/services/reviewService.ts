@@ -1,4 +1,4 @@
-import { ReviewDto, CreateReviewDto, UpdateReviewDto, ReviewStatisticsDto, PagedResult } from '../interfaces/types';
+import { ReviewDto, CreateReviewDto, UpdateReviewDto, ReviewStatisticsDto, PagedResult, ReviewSentimentDto } from '../interfaces/types';
 
 import { ErrorHandler } from './errorHandler';
 
@@ -177,6 +177,25 @@ export const reviewService = {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || 'Failed to delete review');
     }
+  },
+
+  // Get sentiment analysis for a review (produced by the Lambda).
+  // Returns null when the Lambda hasn't processed it yet (HTTP 202).
+  async getReviewSentiment(reviewId: string): Promise<ReviewSentimentDto | null> {
+    const response = await fetch(
+      `${API_BASE_URL}/review/${reviewId}/sentiment`,
+      { credentials: 'include' }
+    );
+
+    if (response.status === 202 || response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch review sentiment');
+    }
+
+    return response.json();
   },
 
   // Get user review statistics

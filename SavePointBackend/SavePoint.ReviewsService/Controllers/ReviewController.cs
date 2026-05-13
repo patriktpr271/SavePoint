@@ -5,6 +5,7 @@ using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.Common.Dtos.Reviews;
 using SavePoint.Common.Exceptions;
 using SavePoint.Entities.Users;
+using SavePoint.ReviewsService.Services;
 
 namespace SavePoint.ReviewsService.Controllers
 {
@@ -14,11 +15,16 @@ namespace SavePoint.ReviewsService.Controllers
 	{
 		private readonly IReviewService _reviewService;
 		private readonly UserManager<ApplicationUser> _userManager;
+		private readonly IReviewSentimentService _sentiment;
 
-		public ReviewController(IReviewService reviewService, UserManager<ApplicationUser> userManager)
+		public ReviewController(
+			IReviewService reviewService,
+			UserManager<ApplicationUser> userManager,
+			IReviewSentimentService sentiment)
 		{
 			_reviewService = reviewService;
 			_userManager = userManager;
+			_sentiment = sentiment;
 		}
 
 		private async Task<string> GetCurrentUserIdAsync()
@@ -135,6 +141,10 @@ namespace SavePoint.ReviewsService.Controllers
 		{
 			var currentUserId = await GetCurrentUserIdAsync();
 			var createdReview = await _reviewService.CreateAsync(dto, currentUserId);
+
+			// Fire-and-forget sentiment publish. Failures are logged inside the service.
+			await _sentiment.PublishAsync(createdReview.Id, createdReview.Content ?? string.Empty);
+
 			return CreatedAtAction(nameof(GetReview), new { id = createdReview.Id }, createdReview);
 		}
 
@@ -154,6 +164,18 @@ namespace SavePoint.ReviewsService.Controllers
 			var currentUserId = await GetCurrentUserIdAsync();
 			await _reviewService.DeleteAsync(id, currentUserId);
 			return NoContent();
+		}
+
+		[HttpGet("{id:guid}/sentiment")]
+		public async Task<IActionResult> GetReviewSentiment(Guid id)
+		{
+			var result = await _sentiment.GetAsync(id);
+			if (result == null)
+			{
+				// 202 = "still being processed"
+				return StatusCode(202, new { message = "Sentiment not available yet" });
+			}
+			return Ok(result);
 		}
 
 		#endregion

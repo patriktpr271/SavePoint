@@ -311,6 +311,70 @@ Learner Lab sessions expire. To resume:
 
 The infrastructure stays up across sessions as long as you don't run `terraform destroy`. Learner Lab leaves resources running, **but** the lab account has a budget limit — keep an eye on the budget bar in the lab portal. NAT Gateway and EKS each cost about ~\$0.10/hr.
 
+---
+
+## 12. Cloud functions (AWS Lambda) bolt-on
+
+Two Lambdas ship with this stack. They are created automatically by `terraform apply` — no extra commands.
+
+### A. `savepoint-review-sentiment`
+- **Trigger**: SQS queue `savepoint-review-events`. The reviews pod publishes one message per `POST /api/Review` containing `{ reviewId, content }`.
+- **Job**: calls AWS Comprehend `DetectSentiment` and writes the result (POSITIVE / NEGATIVE / NEUTRAL / MIXED + confidence scores) into the DynamoDB table `savepoint-review-sentiment`.
+- **Read path**: `GET /api/Review/{id}/sentiment` (new endpoint) returns 200 with the analysis or 202 if the Lambda hasn't processed yet.
+- **Frontend**: a small badge on each review polls that endpoint and shows the label.
+
+### B. `savepoint-top-games-snapshot`
+- **Trigger**: EventBridge schedule `rate(15 minutes)`. Adjust via `snapshot_schedule` in `terraform.tfvars` (e.g. `cron(0 6 * * ? *)` for daily 06:00 UTC).
+- **Job**: fetches `GET /api/game/popular/1?pageSize=10` from the public ALB URL, writes JSON to S3 at `s3://<bucket>/top-games/latest.json` with public-read.
+- **Frontend**: home page widget `<TopGamesSnapshot />` reads the JSON directly from S3 (no API call to your backend).
+
+### How pods reach AWS APIs (Learner Lab)
+Pods use the **node's `LabRole`** via EC2 instance metadata. The .NET AWS SDK auto-discovers it through its default credential chain. No `AWS_ACCESS_KEY_ID` in YAML, nothing to refresh. Works because managed node groups default to IMDS hop limit = 2.
+
+If you ever see `Unable to load credentials` in the reviews pod logs, fall back to a Kubernetes Secret with your Learner Lab session creds — ask the assistant to wire it up.
+
+### Cost (on top of section 8)
+All Lambda-side resources fit inside AWS free tier for casual testing:
+
+| Resource | Free-tier headroom | Realistic test usage |
+|---|---|---|
+| Lambda invocations | 1M/month free | <1k |
+| Lambda compute | 400k GB-sec/month free | <100 |
+| SQS requests | 1M/month free | <1k |
+| DynamoDB on-demand | 25 RCU + 25 WCU + 25 GB free | <100 items |
+| Comprehend DetectSentiment | 50k units free (first 12 months) | <100 |
+| S3 storage | 5 GB free | <1 KB |
+| S3 GET requests | 20k/month free | depends on home-page hits |
+| EventBridge rules | 14M events/month free | ~3k @ 15-min rate |
+
+**Net additional cost: effectively $0** while inside the Learner Lab.
+
+### Verifying it works after deploy
+```bash
+# 1. Confirm the queue and table exist
+aws sqs get-queue-attributes --region us-east-1 \
+  --queue-url "$(terraform -chdir=infra/terraform output -raw review_events_queue_url)" \
+  --attribute-names QueueArn ApproximateNumberOfMessages
+aws dynamodb describe-table --region us-east-1 \
+  --table-name savepoint-review-sentiment --query 'Table.TableStatus'
+
+# 2. Submit a review through the UI, then read its sentiment ~3 s later
+REVIEW_ID="<paste id from POST /api/Review response>"
+curl http://<ALB_DNS>/api/Review/${REVIEW_ID}/sentiment
+
+# 3. Snapshot Lambda — view the snapshot directly
+curl "$(terraform -chdir=infra/terraform output -raw top_games_object_url)"
+
+# 4. CloudWatch logs (one per Lambda)
+aws logs tail /aws/lambda/savepoint-review-sentiment --region us-east-1 --since 10m
+aws logs tail /aws/lambda/savepoint-top-games-snapshot --region us-east-1 --since 30m
+```
+
+### Tear-down
+`bash scripts/teardown-aws.sh` removes the queue, table, S3 bucket (with all objects via `force_destroy`), both Lambdas, and the EventBridge rule. No manual cleanup needed.
+
+---
+
 > **Save money tip:** when not actively demoing, scale the node group to 0 to avoid EC2 costs:
 >
 > ```bash

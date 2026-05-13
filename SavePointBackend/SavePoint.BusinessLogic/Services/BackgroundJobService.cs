@@ -91,6 +91,19 @@ namespace SavePoint.BusinessLogic.Services
                 "import"
             );
 
+            // 4. One-time full base-data sync — registered so it has a "Trigger now"
+            //    button in the Hangfire UI. The cron points at Jan 1 03:00 UTC every
+            //    year so it almost never auto-fires; you trigger it manually after a
+            //    fresh deploy. (Standard 5-field cron — Hangfire's parser rejects '?'.)
+            _logger.LogInformation("Setting up manual full base-data sync entry");
+            _recurringJobManager.AddOrUpdate<BackgroundJobService>(
+                "manual-full-base-data-sync",
+                service => service.ManualFullBaseDataSync(),
+                "0 3 1 1 *",
+                TimeZoneInfo.Utc,
+                "import"
+            );
+
             _logger.LogInformation("Recurring jobs setup completed successfully");
         }
 
@@ -273,6 +286,40 @@ namespace SavePoint.BusinessLogic.Services
         public async Task ManualIncrementalBaseDataImport()
         {
             await ExecuteIncrementalBaseDataImport();
+        }
+
+        /// <summary>
+        /// MANUAL JOB: FULL base-data sync — ignores the 7-day date filter so a fresh
+        /// database gets ALL genres / platforms / companies from IGDB. Run this ONCE
+        /// after first deploying to a new environment, before the games import.
+        /// </summary>
+        [AutomaticRetry(Attempts = 1)]
+        [DisplayName("?? MANUAL: Full Base Data Sync (One-Time Only)")]
+        public async Task ManualFullBaseDataSync()
+        {
+            var jobRun = await StartJobRun(JOB_TYPE_BASE_DATA);
+            try
+            {
+                _logger.LogInformation("Starting FULL base-data sync (no date filter) job {JobId}", jobRun.Id);
+
+                // unix timestamp 0 = 1970-01-01 → IGDB returns everything ever
+                var allTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                jobRun.LastUpdateDate = allTime;
+                jobRun.Metadata = JsonSerializer.Serialize(new { Mode = "FullBaseDataSync", From = allTime });
+                await _jobRunRepository.UpdateAsync(jobRun);
+
+                await ExecuteImportStep(jobRun, "Base Data (Full Sync)",
+                    async () => await _importService.ImportBaseDataIncrementalAsync(allTime));
+
+                await CompleteJobRun(jobRun, true);
+                _logger.LogInformation("Full base-data sync job {JobId} completed successfully", jobRun.Id);
+            }
+            catch (Exception ex)
+            {
+                await CompleteJobRun(jobRun, false, ex.Message, ex.ToString());
+                _logger.LogError(ex, "Full base-data sync job {JobId} failed", jobRun.Id);
+                throw;
+            }
         }
 
         /// <summary>

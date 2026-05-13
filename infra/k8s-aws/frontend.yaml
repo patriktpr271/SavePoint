@@ -16,7 +16,7 @@ spec:
       containers:
         - name: frontend
           image: savepoint-frontend:phase2
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 4173
           readinessProbe:

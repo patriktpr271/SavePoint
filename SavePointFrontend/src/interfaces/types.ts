@@ -143,3 +143,25 @@ export interface ReviewStatisticsDto {
   totalReviews: number;
   averageRating: number;
 }
+
+export type SentimentLabel = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' | 'MIXED';
+
+export interface ReviewSentimentDto {
+  reviewId: string;
+  sentiment: SentimentLabel;
+  positive: number;
+  negative: number;
+  neutral: number;
+  mixed: number;
+  analyzedAt: string;
+}
+
+export interface TopGamesSnapshotDto {
+  generatedAt: string;
+  popularityType: number;
+  source: string;
+  data: {
+    items?: GameCardDto[];
+    totalCount?: number;
+  };
+}

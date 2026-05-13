@@ -75,6 +75,18 @@ variable "private_subnet_cidrs" {
   default     = ["10.0.11.0/24", "10.0.12.0/24"]
 }
 
+variable "app_base_url" {
+  description = "Public ALB URL — set by the deploy script after the ALB is provisioned. Leave empty on first apply."
+  type        = string
+  default     = ""
+}
+
+variable "snapshot_schedule" {
+  description = "EventBridge schedule for top-games-snapshot Lambda"
+  type        = string
+  default     = "rate(15 minutes)"
+}
+
 variable "ecr_repositories" {
   description = "ECR repositories to create, one per service image"
   type        = list(string)

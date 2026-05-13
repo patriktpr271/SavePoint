@@ -10,8 +10,11 @@ using SavePoint.DAL.Contexts;
 using SavePoint.DAL.Repositories;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Users;
+using Amazon.DynamoDBv2;
+using Amazon.SQS;
 using SavePoint.ReviewsService.Filters;
 using SavePoint.ReviewsService.Middleware;
+using SavePoint.ReviewsService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -111,6 +114,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IGameRepository, GameRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+
+// AWS SDK — uses the default credential chain (env vars, EC2 IMDS via the
+// node's LabRole on EKS). Region comes from AWS_REGION / AWS_DEFAULT_REGION.
+builder.Services.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient());
+builder.Services.AddSingleton<IAmazonDynamoDB>(_ => new AmazonDynamoDBClient());
+builder.Services.AddScoped<IReviewSentimentService, ReviewSentimentService>();
 
 var app = builder.Build();
 

@@ -42,3 +42,23 @@ output "kubeconfig_command" {
   description = "Run this command to point kubectl at the new cluster"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
 }
+
+output "review_events_queue_url" {
+  description = "SQS queue URL the reviews service publishes to"
+  value       = module.lambda.review_events_queue_url
+}
+
+output "review_sentiment_table" {
+  description = "DynamoDB table where the Lambda writes sentiment results"
+  value       = module.lambda.review_sentiment_table
+}
+
+output "top_games_object_url" {
+  description = "Public URL of the top-games JSON snapshot (fetched by the frontend)"
+  value       = module.lambda.top_games_object_url
+}
+
+output "top_games_lambda_name" {
+  description = "Lambda function name (used by the deploy script to patch APP_BASE_URL)"
+  value       = module.lambda.top_games_lambda_name
+}

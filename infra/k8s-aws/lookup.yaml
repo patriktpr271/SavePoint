@@ -16,7 +16,7 @@ spec:
       containers:
         - name: lookup
           image: savepoint-lookup:phase2
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:

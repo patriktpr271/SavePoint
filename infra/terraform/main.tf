@@ -86,6 +86,19 @@ resource "kubernetes_storage_class_v1" "ebs_gp3" {
   depends_on = [helm_release.aws_ebs_csi_driver]
 }
 
+module "lambda" {
+  source = "./modules/lambda"
+
+  project_name = var.project_name
+  lab_role_arn = var.lab_role_arn
+  aws_region   = var.aws_region
+
+  review_sentiment_source_dir = "${path.root}/../../lambda/review-sentiment"
+  top_games_source_dir        = "${path.root}/../../lambda/top-games-snapshot"
+  app_base_url                = var.app_base_url
+  snapshot_schedule           = var.snapshot_schedule
+}
+
 resource "helm_release" "aws_load_balancer_controller" {
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"

@@ -20,7 +20,7 @@ spec:
       containers:
         - name: backend
           image: savepoint-backend:phase2
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           volumeMounts:
             - name: dataprotection-keys
               mountPath: /root/.aspnet/DataProtection-Keys

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ReviewDto } from '../interfaces/types';
 import { useAuth } from '../contexts/AuthContext';
 import { reviewService } from '../services/reviewService';
+import SentimentBadge from './SentimentBadge';
 
 interface ReviewItemProps {
   review: ReviewDto;
@@ -100,9 +101,10 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
             </div>
           </div>
 
-          {/* Rating */}
-          <div className="flex items-center gap-2">
+          {/* Rating + sentiment badge */}
+          <div className="flex items-center gap-2 flex-wrap">
             {renderStars(review.rating)}
+            <SentimentBadge reviewId={review.id} />
           </div>
         </div>
 

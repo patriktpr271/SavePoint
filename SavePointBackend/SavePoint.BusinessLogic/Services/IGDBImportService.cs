@@ -1,4 +1,5 @@
 using IGDB;
+using RestEase;
 using SavePoint.BusinessLogic.Services.Interfaces;
 using SavePoint.DAL.Repositories.Interfaces;
 using SavePoint.Entities.Games;
@@ -17,8 +18,31 @@ namespace SavePoint.BusinessLogic.Services
 		private readonly IPopularityRepository _popularityRepository;
 
 		private const int BATCH_SIZE = 250;
-		private const int DELAY_BETWEEN_BATCHES_MS = 100;
+		// IGDB free tier rate limit is 4 req/sec. 300ms ≈ 3.3/sec gives us headroom.
+		private const int DELAY_BETWEEN_BATCHES_MS = 300;
+		private const int MAX_RETRIES_ON_429 = 6;
 		private static readonly int[] POPULARITY_TYPES = new int[] { 1, 2, 5 };
+
+		/// <summary>
+		/// Wraps an IGDB call with exponential backoff on HTTP 429 (Too Many Requests).
+		/// Sleeps 2s, 4s, 8s, 16s, 32s, 60s before giving up.
+		/// </summary>
+		private static async Task<T> WithRetry<T>(Func<Task<T>> call)
+		{
+			for (int attempt = 0; ; attempt++)
+			{
+				try
+				{
+					return await call();
+				}
+				catch (ApiException ex) when ((int)ex.StatusCode == 429 && attempt < MAX_RETRIES_ON_429)
+				{
+					var delaySec = Math.Min(60, (int)Math.Pow(2, attempt + 1));
+					Console.WriteLine($"IGDB returned 429. Sleeping {delaySec}s before retry {attempt + 1}/{MAX_RETRIES_ON_429}.");
+					await Task.Delay(TimeSpan.FromSeconds(delaySec));
+				}
+			}
+		}
 
 		public IGDBImportService(IGDBClient client, IGenreRepository genreRepository, IGameRepository gameRepository, 
 			ICompanyRepository companyRepository, IPlatfromRepository platfromRepository, IPopularityRepository popularityRepository)
@@ -57,13 +81,13 @@ namespace SavePoint.BusinessLogic.Services
 				Console.WriteLine($"Processing batch starting at offset {offset}...");
 
 				// Get games updated after the specified date
-				var games = await _client.QueryAsync<IGDB.Models.Game>(
+				var games = await WithRetry(() => _client.QueryAsync<IGDB.Models.Game>(
 					 IGDBClient.Endpoints.Games,
 					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher,updated_at; " +
 					 $"where updated_at >= {unixTimestamp}; " +
 					 $"sort updated_at asc; " +
 					 $"limit {BATCH_SIZE}; offset {offset};"
-				);
+				));
 
 				if (games.Count() == 0)
 				{
@@ -191,12 +215,12 @@ namespace SavePoint.BusinessLogic.Services
 				Console.WriteLine($"Processing batch starting at offset {offset}...");
 
 				// Get all games (no date filter)
-				var games = await _client.QueryAsync<IGDB.Models.Game>(
+				var games = await WithRetry(() => _client.QueryAsync<IGDB.Models.Game>(
 					 IGDBClient.Endpoints.Games,
 					 $"fields id,name,summary,cover.*,first_release_date,genres,platforms,involved_companies.company,involved_companies.developer,involved_companies.publisher; " +
 					 $"sort id asc; " +
 					 $"limit {BATCH_SIZE}; offset {offset};"
-				);
+				));
 
 				if (games.Count() == 0)
 				{
@@ -284,10 +308,10 @@ namespace SavePoint.BusinessLogic.Services
 
 			while (hasMore)
 			{
-				var response = await _client.QueryAsync<IGDB.Models.Genre>(
+				var response = await WithRetry(() => _client.QueryAsync<IGDB.Models.Genre>(
 					IGDBClient.Endpoints.Genres,
 					$"fields id,name,updated_at; where updated_at >= {unixTimestamp}; limit {BATCH_SIZE}; offset {offset};"
-				);
+				));
 
 				if (response.Count() == 0)
 				{
@@ -334,10 +358,10 @@ namespace SavePoint.BusinessLogic.Services
 
 			while (hasMore)
 			{
-				var result = await _client.QueryAsync<IGDB.Models.Company>(
+				var result = await WithRetry(() => _client.QueryAsync<IGDB.Models.Company>(
 					IGDBClient.Endpoints.Companies,
 					$"fields id,name,description,logo.*,updated_at; where updated_at >= {unixTimestamp}; limit {BATCH_SIZE}; offset {offset};"
-				);
+				));
 
 				if (result.Count() == 0)
 				{
@@ -380,10 +404,10 @@ namespace SavePoint.BusinessLogic.Services
 
 			while (hasMore)
 			{
-				var result = await _client.QueryAsync<IGDB.Models.Platform>(
+				var result = await WithRetry(() => _client.QueryAsync<IGDB.Models.Platform>(
 					IGDBClient.Endpoints.Platforms,
 					$"fields id,name,abbreviation,updated_at; where updated_at >= {unixTimestamp}; limit {BATCH_SIZE}; offset {offset};"
-				);
+				));
 
 				if (result.Count() == 0)
 				{
@@ -436,10 +460,10 @@ namespace SavePoint.BusinessLogic.Services
 				{
 					try
 					{
-						var popularityResult = await _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
+						var popularityResult = await WithRetry(() => _client.QueryAsync<IGDB.Models.PopularityPrimitive>(
 							IGDBClient.Endpoints.PopularityPrimitives,
 							$"fields game_id,value,popularity_type; where game_id = ({gameIdString}) & popularity_type = {popularityType};"
-						);
+						));
 
 						foreach (var p in popularityResult)
 						{

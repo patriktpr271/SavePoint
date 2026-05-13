@@ -82,8 +82,14 @@ ECR_BACKEND=$(echo  "${ECR_URLS_JSON}" | python -c "import json,sys;print(json.l
 ECR_REVIEWS=$(echo  "${ECR_URLS_JSON}" | python -c "import json,sys;print(json.load(sys.stdin)['savepoint-reviews'])")
 ECR_LOOKUP=$(echo   "${ECR_URLS_JSON}" | python -c "import json,sys;print(json.load(sys.stdin)['savepoint-lookup'])")
 ECR_FRONTEND=$(echo "${ECR_URLS_JSON}" | python -c "import json,sys;print(json.load(sys.stdin)['savepoint-frontend'])")
+REVIEW_QUEUE_URL="$(terraform output -raw review_events_queue_url 2>/dev/null || true)"
+REVIEW_SENTIMENT_TABLE="$(terraform output -raw review_sentiment_table 2>/dev/null || true)"
+TOP_GAMES_URL="$(terraform output -raw top_games_object_url 2>/dev/null || true)"
+TOP_GAMES_LAMBDA="$(terraform output -raw top_games_lambda_name 2>/dev/null || true)"
 ok "Cluster: ${CLUSTER_NAME}"
 ok "ECR registry: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+ok "Review queue: ${REVIEW_QUEUE_URL:-<missing>}"
+ok "Top-games snapshot URL: ${TOP_GAMES_URL:-<missing>}"
 
 # ----- 6. Docker login to ECR ---------------------------------------------
 log "Authenticating Docker to ECR"
@@ -118,8 +124,11 @@ build_push savepoint-backend  "${REPO_ROOT}/SavePointBackend"  "${REPO_ROOT}/Sav
 build_push savepoint-reviews  "${REPO_ROOT}/SavePointBackend"  "${REPO_ROOT}/SavePointBackend/SavePoint.ReviewsService/Dockerfile" "${ECR_REVIEWS}"
 build_push savepoint-lookup   "${REPO_ROOT}/SavePointBackend"  "${REPO_ROOT}/SavePointBackend/SavePoint.LookupService/Dockerfile"  "${ECR_LOOKUP}"
 # Frontend uses path-based routing through the ALB, so the API base URL is the
-# same host as the frontend (empty value = relative paths).
-build_push savepoint-frontend "${REPO_ROOT}/SavePointFrontend" "${REPO_ROOT}/SavePointFrontend/Dockerfile" "${ECR_FRONTEND}" --build-arg "VITE_API_BASE_URL="
+# same host as the frontend (empty value = relative paths). VITE_TOP_GAMES_URL
+# is the public S3 URL of the top-games snapshot; baked into the JS bundle.
+build_push savepoint-frontend "${REPO_ROOT}/SavePointFrontend" "${REPO_ROOT}/SavePointFrontend/Dockerfile" "${ECR_FRONTEND}" \
+  --build-arg "VITE_API_BASE_URL=" \
+  --build-arg "VITE_TOP_GAMES_URL=${TOP_GAMES_URL}"
 
 # ----- 8. kubeconfig ------------------------------------------------------
 log "Updating kubeconfig"
@@ -142,8 +151,17 @@ kustomize edit set image \
   "savepoint-lookup=${ECR_LOOKUP}:${TAG}" \
   "savepoint-frontend=${ECR_FRONTEND}:${TAG}"
 
+log "Creating/updating savepoint-aws-config ConfigMap (queue URL + table name)"
+kubectl -n savepoint create configmap savepoint-aws-config \
+  --from-literal=REVIEW_EVENTS_QUEUE_URL="${REVIEW_QUEUE_URL}" \
+  --from-literal=REVIEW_SENTIMENT_TABLE="${REVIEW_SENTIMENT_TABLE}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 log "Applying manifests"
 kubectl apply -k .
+
+log "Restarting reviews deployment so it picks up the new ConfigMap values"
+kubectl -n savepoint rollout restart deployment/savepoint-reviews || true
 
 # ----- 11. Wait for rollouts ----------------------------------------------
 log "Waiting for application rollouts"
@@ -170,12 +188,31 @@ if [[ -z "${ALB_DNS}" ]]; then
   exit 0
 fi
 
+# ----- 13. Patch the top-games Lambda with the ALB URL --------------------
+if [[ -n "${ALB_DNS}" && -n "${TOP_GAMES_LAMBDA}" ]]; then
+  APP_BASE="http://${ALB_DNS}"
+  log "Patching ${TOP_GAMES_LAMBDA} env APP_BASE_URL=${APP_BASE}"
+  aws lambda update-function-configuration \
+    --region "${AWS_REGION}" \
+    --function-name "${TOP_GAMES_LAMBDA}" \
+    --environment "Variables={APP_BASE_URL=${APP_BASE},SNAPSHOT_BUCKET=$(aws lambda get-function-configuration --region ${AWS_REGION} --function-name ${TOP_GAMES_LAMBDA} --query 'Environment.Variables.SNAPSHOT_BUCKET' --output text),SNAPSHOT_KEY=top-games/latest.json,POPULARITY_TYPE=1,PAGE_SIZE=10}" \
+    --output json >/dev/null
+  ok "Lambda APP_BASE_URL set"
+
+  log "Invoking the top-games Lambda once so the first snapshot is ready"
+  aws lambda invoke --region "${AWS_REGION}" --function-name "${TOP_GAMES_LAMBDA}" \
+    --cli-binary-format raw-in-base64-out /tmp/lambda-out.json >/dev/null || true
+  cat /tmp/lambda-out.json 2>/dev/null || true; echo
+fi
+
 cat <<EOF
 
 \033[1;32m================ DEPLOYMENT COMPLETE ================\033[0m
-ALB DNS:  ${ALB_DNS}
-URL:      http://${ALB_DNS}/
-Hangfire: http://${ALB_DNS}/hangfire
-API:      http://${ALB_DNS}/api
+ALB DNS:        ${ALB_DNS}
+URL:            http://${ALB_DNS}/
+Hangfire:       http://${ALB_DNS}/hangfire
+API:            http://${ALB_DNS}/api
+Top games JSON: ${TOP_GAMES_URL:-<not configured>}
+Sentiment:      POST a review, then GET /api/Review/{id}/sentiment
 \033[1;33mNote:\033[0m DNS for a new ALB can take 30–90 seconds to propagate.
 EOF

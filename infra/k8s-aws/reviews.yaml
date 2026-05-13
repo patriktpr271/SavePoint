@@ -20,7 +20,7 @@ spec:
       containers:
         - name: reviews
           image: savepoint-reviews:phase2
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           volumeMounts:
             - name: dataprotection-keys
               mountPath: /root/.aspnet/DataProtection-Keys
@@ -36,6 +36,23 @@ spec:
                 secretKeyRef:
                   name: savepoint-secrets
                   key: ConnectionStrings__DefaultConnection
+            # AWS SDK config. AWS_REGION is required by the SDK; the queue URL
+            # and DynamoDB table name come from a ConfigMap written by the
+            # deploy script after `terraform apply`.
+            - name: AWS_REGION
+              value: us-east-1
+            - name: AWS__ReviewEventsQueueUrl
+              valueFrom:
+                configMapKeyRef:
+                  name: savepoint-aws-config
+                  key: REVIEW_EVENTS_QUEUE_URL
+                  optional: true
+            - name: AWS__ReviewSentimentTable
+              valueFrom:
+                configMapKeyRef:
+                  name: savepoint-aws-config
+                  key: REVIEW_SENTIMENT_TABLE
+                  optional: true
           readinessProbe:
             tcpSocket:
               port: 8080
