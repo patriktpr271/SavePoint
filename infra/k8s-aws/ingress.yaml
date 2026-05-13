@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: savepoint-ingress
+  namespace: savepoint
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          # ORDER MATTERS for ALB — longer/more-specific paths must come first.
+          - path: /api/review
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-reviews
+                port:
+                  number: 8080
+          - path: /api/lookup
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-lookup
+                port:
+                  number: 8080
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-backend
+                port:
+                  number: 8080
+          - path: /hangfire
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: savepoint-frontend
+                port:
+                  number: 4173

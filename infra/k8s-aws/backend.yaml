@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: savepoint-backend
+  namespace: savepoint
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: savepoint-backend
+  template:
+    metadata:
+      labels:
+        app: savepoint-backend
+    spec:
+      volumes:
+        - name: dataprotection-keys
+          persistentVolumeClaim:
+            claimName: dataprotection-pvc
+      containers:
+        - name: backend
+          image: savepoint-backend:phase2
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: dataprotection-keys
+              mountPath: /root/.aspnet/DataProtection-Keys
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: savepoint-secrets
+                  key: ConnectionStrings__DefaultConnection
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: savepoint-backend
+  namespace: savepoint
+spec:
+  selector:
+    app: savepoint-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

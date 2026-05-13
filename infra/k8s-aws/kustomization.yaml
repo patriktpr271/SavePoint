@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- namespace.yaml
+- secret.yaml
+- dataprotection-pvc.yaml
+- db.yaml
+- lookup.yaml
+- reviews.yaml
+- backend.yaml
+- frontend.yaml
+- ingress.yaml
+
+# Image placeholders rewritten by scripts/deploy-aws.sh before kubectl apply.
+# The deploy script runs `kustomize edit set image` with the ECR URLs from
+# `terraform output`. The values below are unused fallbacks for local rendering.
+images:
+- name: savepoint-backend
+  newName: 380076695912.dkr.ecr.us-east-1.amazonaws.com/savepoint-backend
+  newTag: phase2
+- name: savepoint-frontend
+  newName: 380076695912.dkr.ecr.us-east-1.amazonaws.com/savepoint-frontend
+  newTag: phase2
+- name: savepoint-lookup
+  newName: 380076695912.dkr.ecr.us-east-1.amazonaws.com/savepoint-lookup
+  newTag: phase2
+- name: savepoint-reviews
+  newName: 380076695912.dkr.ecr.us-east-1.amazonaws.com/savepoint-reviews
+  newTag: phase2

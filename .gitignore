@@ -59,3 +59,26 @@ ehthumbs.db
 /.github/BADGES.md
 /DEPLOYMENT_TROUBLESHOOTING.md
 SavePointBackend/build.log
+
+# ---------- Terraform (infra/terraform) ----------
+# Provider plugins / modules cache — recreated by `terraform init`
+**/.terraform/
+
+# Local state — we use the S3 backend, but ignore in case someone falls back
+*.tfstate
+*.tfstate.*
+
+# Plan output written by `terraform plan -out=tfplan` in scripts/deploy-aws.sh
+*.tfplan
+tfplan
+
+# Crash dumps
+crash.log
+crash.*.log
+
+# Local-only override files (Terraform's documented "override.tf" convention)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
