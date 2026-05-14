@@ -1,0 +1,50 @@
+@startuml monolith_vs_microservices
+title SavePoint - Monolit vs. Microservices
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam component {
+  BackgroundColor #F5F7FA
+  BorderColor #34495E
+}
+skinparam database {
+  BackgroundColor #FDEBD0
+  BorderColor #B9770E
+}
+
+package "Kiindulasi allapot: retegezett monolit" as MONO {
+  component "SavePoint.Host\n(API / Controllers)" as M_Host
+  component "SavePoint.BusinessLogic" as M_BL
+  component "SavePoint.DAL" as M_DAL
+  component "SavePoint.Entities" as M_Ent
+  component "SavePoint.Common" as M_Com
+  M_Host --> M_BL
+  M_BL --> M_DAL
+  M_DAL --> M_Ent
+  M_BL ..> M_Com
+  M_Host ..> M_Com
+}
+
+package "Cel allapot: microservices" as MICRO {
+  component "SavePoint.Host\n(auth, games, lists,\nusers, Hangfire)" as S_Host
+  component "SavePoint.ReviewsService" as S_Rev
+  component "SavePoint.LookupService" as S_Look
+}
+
+database "SQL Server\n(megosztott adatbazis)" as DB
+
+S_Host --> DB
+S_Rev --> DB
+S_Look --> DB
+
+MONO -[#27AE60,thickness=3]-> MICRO : "migracios irany\n(reszleges kiemeles)"
+
+note bottom of MICRO
+  Reviews es Lookup tudatosan kiemelve
+  (lazan csatolt, egyszeruen levalaszthato).
+  Kozos adatbazis = pragmatikus atmeneti dontes.
+end note
+
+@enduml

@@ -1,0 +1,50 @@
+@startuml savepoint_monolit_layers
+title SavePoint monolit retegei - kiemelhetoseg elemzes
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam rectangle {
+  BorderColor #34495E
+}
+
+legend top right
+  |= Jeloles |= Jelentes |
+  |<#ABEBC6>| Konnyen kiemelheto microservice-be |
+  |<#F5CBA7>| Szorosan csatolt, a magban marad |
+  |<#D6EAF8>| Megosztott / kozos reteg |
+endlegend
+
+rectangle "SavePoint.Host  (API reteg)" as Host #D6EAF8 {
+  rectangle "AuthController\n(Identity)" as Auth #F5CBA7
+  rectangle "GameController" as Game #F5CBA7
+  rectangle "ListController" as List #F5CBA7
+  rectangle "ReviewController" as Rev #ABEBC6
+  rectangle "LookupController" as Look #ABEBC6
+  rectangle "Hangfire jobs\n(IGDB import)" as HF #F5CBA7
+}
+
+rectangle "SavePoint.BusinessLogic" as BL #D6EAF8 {
+  rectangle "ReviewService" as RevS #ABEBC6
+  rectangle "LookupService" as LookS #ABEBC6
+  rectangle "GameService / UserService /\nUserListService / IGDBImportService" as CoreS #F5CBA7
+}
+
+rectangle "SavePoint.DAL\n(DbContext, Repositories, Migrations)" as DAL #D6EAF8
+rectangle "SavePoint.Entities" as Ent #D6EAF8
+rectangle "SavePoint.Common\n(DTOs, Exceptions)" as Com #D6EAF8
+
+Host --> BL
+BL --> DAL
+DAL --> Ent
+BL ..> Com
+Host ..> Com
+
+note bottom of DAL
+  A DAL, az Entities es az Identity kozos marad ->
+  ezert hasznal mindharom szolgaltatas
+  kozos SQL Server adatbazist.
+end note
+
+@enduml

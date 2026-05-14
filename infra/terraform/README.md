@@ -313,6 +313,72 @@ The infrastructure stays up across sessions as long as you don't run `terraform 
 
 ---
 
+## 11.5. Pausing to save money between work sessions
+
+When you're not actively using the cluster, scale the EC2 worker nodes to **0** to stop paying for compute. The EKS control plane, NAT Gateway, ALB, EBS volumes, ECR images, and Lambdas all stay up — about **$4/day** instead of the running $6/day.
+
+**Important: your data (SQL Server contents, IGDB lookup tables, reviews, users) is preserved** because it lives on EBS volumes that aren't deleted.
+
+### Pause it
+
+From the repo root:
+
+```bash
+bash scripts/pause-aws.sh
+```
+
+The script:
+1. Reads the cluster name from `terraform output`.
+2. Verifies your AWS credentials are valid.
+3. Calls `aws eks update-nodegroup-config` with `desiredSize=0`.
+
+After ~2–4 minutes EC2 will terminate the worker instances. All pods enter `Pending` state — that's normal. **Don't run `terraform destroy`** or you'll lose the EBS volume.
+
+### Check it actually paused
+
+```bash
+# Should be empty (no Running instances)
+aws ec2 describe-instances --region us-east-1 \
+  --filters "Name=tag:eks:cluster-name,Values=savepoint-dev" "Name=instance-state-name,Values=running" \
+  --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output table
+
+# Pods stuck in Pending = paused
+kubectl -n savepoint get pods
+```
+
+### Resume it (~3–5 min before you demo)
+
+The Learner Lab session credentials expire every few hours — refresh them first if needed (paste the three `export AWS_...` lines from the Learner Lab portal), then:
+
+```bash
+bash scripts/resume-aws.sh
+```
+
+The script:
+1. Verifies credentials (prints clear instructions if expired).
+2. Scales the node group back to `desired=2, min=1, max=3`. (Override with `DESIRED=3 bash scripts/resume-aws.sh` if you want more.)
+3. Re-points `kubectl` at the cluster (safe even from a brand-new shell window).
+4. Waits for the nodes to register and become `Ready`.
+5. Waits for `savepoint-db`, `savepoint-backend`, `savepoint-reviews`, `savepoint-lookup`, and `savepoint-frontend` to roll out.
+6. Prints the ALB URL.
+
+Total resume time: usually **3–5 minutes**. The MSSQL pod re-attaches to its existing EBS volume so all your imported data is exactly where you left it — no Hangfire jobs to re-trigger.
+
+### Common pause/resume issues
+
+| Symptom | Fix |
+|---|---|
+| `resume-aws.sh` says credentials expired | Re-export the three `AWS_*` lines from the Learner Lab portal, re-run the script |
+| ALB DNS is empty for >5 min after resume | The ALB controller may need a kick: `kubectl -n kube-system rollout restart deployment/aws-load-balancer-controller` |
+| `savepoint-db` pod stays `Pending` with PVC unbound | Run `kubectl describe pod savepoint-db-0 -n savepoint` — if the EBS volume is in another AZ from your new node, delete the pod and let the StatefulSet retry, or scale node group up so two nodes exist across AZs |
+| Frontend works but `top-games` widget is stale | The snapshot Lambda kept trying to hit the ALB while paused and got HTTP failures; just wait one EventBridge tick (15 min) after resume, or invoke it once: `aws lambda invoke --region us-east-1 --function-name savepoint-top-games-snapshot /tmp/out.json` |
+
+### When to fully tear down instead
+
+Pause = ~$4/day. If your demo is more than ~2 weeks out, `bash scripts/teardown-aws.sh` brings it to $0/day, but you'll need to redo the IGDB imports on next deploy (~30 min). For a school project budget of $50, pausing is the right call if the demo is within 2 weeks; tearing down is the right call if it's farther out.
+
+---
+
 ## 12. Cloud functions (AWS Lambda) bolt-on
 
 Two Lambdas ship with this stack. They are created automatically by `terraform apply` — no extra commands.

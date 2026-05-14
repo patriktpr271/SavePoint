@@ -1,0 +1,51 @@
+@startuml kubernetes_architecture
+title Kubernetes klaszter felepitese (EKS)
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam component {
+  BackgroundColor #EAF2F8
+  BorderColor #2471A3
+}
+skinparam package {
+  BackgroundColor #FBFCFC
+  BorderColor #5D6D7E
+}
+
+actor "Fejleszto" as Dev
+
+package "Control Plane (AWS managed)" as CP {
+  component "API Server" as API
+  component "Scheduler" as SCH
+  component "Controller Manager" as CM
+  database "etcd" as ETCD
+  API --> ETCD
+  SCH --> API
+  CM --> API
+}
+
+package "Worker Node 1 (EC2)" as N1 {
+  component "kubelet" as K1
+  component "Pod(s)" as P1
+  K1 --> P1
+}
+
+package "Worker Node 2 (EC2)" as N2 {
+  component "kubelet" as K2
+  component "Pod(s)" as P2
+  K2 --> P2
+}
+
+Dev -[#27AE60,thickness=2]-> API : kubectl / kustomize
+
+API --> K1 : pod utemezes
+API --> K2 : pod utemezes
+
+note bottom of CP
+  Az AWS uzemelteti a control plane-t (EKS),
+  a worker node-ok kezelt node group-ban futnak.
+end note
+
+@enduml

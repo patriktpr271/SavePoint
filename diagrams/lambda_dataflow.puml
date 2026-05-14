@@ -1,0 +1,57 @@
+@startuml lambda_dataflow
+title Felhofuggvenyek adatfolyamai
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam component {
+  BackgroundColor #EBF5FB
+  BorderColor #2E86C1
+}
+skinparam queue {
+  BackgroundColor #FCF3CF
+  BorderColor #B7950B
+}
+skinparam database {
+  BackgroundColor #FDEDEC
+  BorderColor #CB4335
+}
+
+package "1. folyamat: review sentiment elemzes (esemenyvezerelt)" as F1 {
+  component "SavePoint.ReviewsService\n(POST /api/review)" as Rev
+  queue "SQS\nsavepoint-review-events" as SQS
+  component "Lambda\nreview-sentiment" as L1
+  component "AWS Comprehend\nDetectSentiment" as Compr
+  database "DynamoDB\nreview-sentiment" as Dyn
+
+  Rev --> SQS : { reviewId, content }
+  SQS --> L1 : trigger (batch)
+  L1 --> Compr : szoveg elemzese
+  Compr --> L1 : POSITIVE / NEGATIVE / ...
+  L1 --> Dyn : eredmeny irasa
+}
+
+package "2. folyamat: top-games snapshot (utemezett)" as F2 {
+  component "EventBridge\nrate(15 minutes)" as EB
+  component "Lambda\ntop-games-snapshot" as L2
+  component "ALB / SavePoint.Host\nGET /api/game/popular" as Host
+  database "S3\ntop-games/latest.json" as S3
+
+  EB --> L2 : cron trigger
+  L2 --> Host : HTTP keres
+  Host --> L2 : nepszeru jatekok JSON
+  L2 --> S3 : publikus JSON kiirasa
+}
+
+note bottom of F1
+  A ReviewsService nem var a valaszra: best-effort,
+  lazan csatolt feldolgozas.
+end note
+
+note bottom of F2
+  A frontend kozvetlenul az S3-bol olvas,
+  nem terheli a backendet.
+end note
+
+@enduml

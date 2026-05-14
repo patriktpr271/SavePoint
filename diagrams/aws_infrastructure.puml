@@ -1,0 +1,68 @@
+@startuml aws_infrastructure
+title SavePoint AWS infrastruktura (Terraform)
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam component {
+  BackgroundColor #EAF2F8
+  BorderColor #2471A3
+}
+skinparam package {
+  BackgroundColor #FBFCFC
+  BorderColor #5D6D7E
+}
+skinparam node {
+  BackgroundColor #F4F6F6
+  BorderColor #566573
+}
+skinparam database {
+  BackgroundColor #FDEBD0
+  BorderColor #B9770E
+}
+skinparam cloud {
+  BackgroundColor #FEF9E7
+  BorderColor #B7950B
+}
+
+actor "Felhasznalo" as User
+
+cloud "AWS fiok  --  Terraform altal kezelt infrastruktura" as AWS {
+
+  component "ALB\n(Application Load Balancer)" as ALB
+
+  package "VPC (10.0.0.0/16)" as VPC {
+    package "EKS klaszter" as EKS {
+      component "Worker node-ok\n(savepoint namespace pod-jai)" as Nodes
+    }
+    database "SQL Server\n(StatefulSet, EBS PVC)" as SQL
+    Nodes --> SQL
+  }
+
+  component "ECR\n(4 kep repo)" as ECR
+  component "Lambda\nreview-sentiment" as L1
+  component "Lambda\ntop-games-snapshot" as L2
+  component "EventBridge\n(cron)" as EB
+  queue "SQS" as SQS
+  database "DynamoDB" as Dyn
+  database "S3\n(top-games snapshot)" as S3
+}
+
+User --> ALB : HTTP
+ALB --> Nodes : path-alapu routing
+Nodes ..> ECR : kep pull
+Nodes --> SQS : review esemenyek
+SQS --> L1
+L1 --> Dyn
+EB --> L2
+L2 --> ALB : GET /api/game/popular
+L2 --> S3
+
+note bottom of AWS
+  A teljes infrastruktura (VPC, EKS, ECR, ALB,
+  Lambda, SQS, DynamoDB, S3, EventBridge)
+  Terraform modulokkal van leirva es letrehozva.
+end note
+
+@enduml

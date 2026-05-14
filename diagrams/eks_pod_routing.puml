@@ -1,0 +1,48 @@
+@startuml eks_pod_routing
+title ALB Ingress utvonal-iranyitas es pod-ok (savepoint namespace)
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam component {
+  BackgroundColor #EBF5FB
+  BorderColor #2E86C1
+}
+skinparam database {
+  BackgroundColor #FDEBD0
+  BorderColor #B9770E
+}
+
+actor "Felhasznalo" as User
+
+rectangle "ALB Ingress  (savepoint-ingress)\n--- routing szabalyok (sorrend szamit) ---\n1. /api/review  -> savepoint-reviews\n2. /api/lookup  -> savepoint-lookup\n3. /api         -> savepoint-backend\n4. /hangfire    -> savepoint-backend\n5. /            -> savepoint-frontend" as Ingress #FCF3CF
+
+package "Pod-ok" as Pods {
+  component "savepoint-frontend\n(Deployment, :4173)" as FE
+  component "savepoint-backend / Host\n(Deployment, :8080)" as BE
+  component "savepoint-reviews\n(Deployment, :8080)" as REV
+  component "savepoint-lookup\n(Deployment, :8080)" as LOOK
+  component "savepoint-db / SQL Server\n(StatefulSet, :1433)" as DB
+  database "EBS PVC\n(mssql-data, 10Gi)" as PVC
+}
+
+User --> Ingress : HTTP :80
+
+Ingress --> FE   : "/*"
+Ingress --> BE   : "/api/*, /hangfire/*"
+Ingress --> REV  : "/api/review/*"
+Ingress --> LOOK : "/api/lookup/*"
+
+BE   --> DB
+REV  --> DB
+LOOK --> DB
+DB --> PVC : volumeClaimTemplate
+
+note bottom of Pods
+  Az ALB ip target-type modban a pod-ok IP-jere
+  routol; az utvonalak a legspecifikusabbtol
+  az altalanos fele rendezve.
+end note
+
+@enduml
